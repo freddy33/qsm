@@ -6,10 +6,12 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 
 class Universe {
+    static boolean debug = true
+    static boolean stop = false
     int currentTime = 0
     List<SourceEvent> activeEvents = []
     List<SourceEvent> deadEvents = []
-    ConcurrentMap<Point, List<SpawnedEvents>> headEvents = new ConcurrentHashMap<>()
+    ConcurrentMap<Point, Set<SpawnedEvent>> headEvents = new ConcurrentHashMap<>()
 
     static {
         StateTransition.verifyAll()
@@ -18,33 +20,35 @@ class Universe {
     public static void main(String[] args) {
         def nt = System.nanoTime()
         def uni = new Universe()
-        uni.addOriginalEvent(new Point(0, 0, 0), SimpleState.S1)
-        uni.addOriginalEvent(new Point(0, -10, 10), SimpleState.S1)
-        uni.addOriginalEvent(new Point(0, -10, -10), SimpleState.S1)
-        uni.addOriginalEvent(new Point(0, 22, 0), SimpleState.S1)
+        def trsOverDef = 2
+        uni.addOriginalEvent(new Point(0, 0, 0), SimpleState.S1, trsOverDef)
+        uni.addOriginalEvent(new Point(0, -10, 10), SimpleState.S1, trsOverDef)
+        uni.addOriginalEvent(new Point(0, -10, -10), SimpleState.S1, trsOverDef)
+        uni.addOriginalEvent(new Point(0, 14, 0), SimpleState.S1, trsOverDef)
         println uni.activeEvents.size()
-        for (int i = 0; i < 12; i++) {
+        for (int i = 0; i < 50; i++) {
             uni.calcNext()
             println uni.activeEvents.size()
             println uni.headEvents.size()
             uni.findNewEvents()
+            if (stop) break;
         }
         println "Total calc for ${uni.currentTime} took ${System.nanoTime() - nt}ns"
     }
 
     void findNewEvents() {
-        ConcurrentMap<SourceEvent, List<MatchingSpawnedEvents>> matchPerSource = new ConcurrentHashMap<>(activeEvents.size())
+        ConcurrentMap<SourceEvent, Set<MatchingSpawnedEvents>> matchPerSource = new ConcurrentHashMap<>(activeEvents.size())
         GParsPool.withPool {
-            headEvents.eachParallel { Point p, List<SpawnedEvents> ses ->
+            headEvents.eachParallel { Point p, Set<SpawnedEvent> ses ->
                 // Find if we have 3 identical spawned events (length + state)
                 if (ses && ses.size() >= 3) {
                     Map<LengthAndState, MatchingSpawnedEvents> result = new HashMap<>()
-                    ses.each { SpawnedEvents se ->
+                    ses.each { SpawnedEvent se ->
                         se.states.each { SimpleState s ->
                             def key = new LengthAndState(se.length, s)
                             MatchingSpawnedEvents events = result.get(key)
                             if (events == null) {
-                                events = new MatchingSpawnedEvents(key)
+                                events = new MatchingSpawnedEvents(p, key)
                                 result.put(key, events)
                             }
                             events.add(se)
@@ -53,7 +57,7 @@ class Universe {
                     result.values().each { MatchingSpawnedEvents mse ->
                         if (mse.isValid()) {
                             mse.getSourceInvolved().each {
-                                matchPerSource.putIfAbsent(it, new ArrayList<MatchingSpawnedEvents>(1))
+                                matchPerSource.putIfAbsent(it, new HashSet<MatchingSpawnedEvents>(1))
                                 def lmse = matchPerSource.get(it)
                                 synchronized (lmse) {
                                     lmse.add(mse)
@@ -64,8 +68,17 @@ class Universe {
                 }
             }
         }
-        matchPerSource.each { SourceEvent k, List<MatchingSpawnedEvents> v ->
-            println "Found ${v.size()} match for $k"
+        // Only sources that have more than 3 matching are relevant
+        def goodMatches = matchPerSource.findAll { k, v -> v.size() >= 3 }
+        // If we get a group of 4 we are good
+        if (goodMatches.size() >= 4) {
+            goodMatches.each { SourceEvent k, Set<MatchingSpawnedEvents> v ->
+                println "For $k found ${v.size()}"
+                if (debug) {
+                    println "match:\n ${v.collect { "${it.p} ${it.ls}" }.join("\n")}"
+                }
+            }
+            stop = true
         }
     }
 
@@ -74,12 +87,12 @@ class Universe {
         headEvents = new ConcurrentHashMap<>((int) ((headEvents.size() + 3) * 2))
         GParsPool.withPool {
             activeEvents.eachParallel { SourceEvent oe ->
-                Map<Point, SpawnedEvents> current = oe.pollCurrent()
+                Map<Point, SpawnedEvent> current = oe.pollCurrent()
                 GParsPool.withPool {
-                    current.eachParallel { Point p, SpawnedEvents nse ->
+                    current.eachParallel { Point p, SpawnedEvent nse ->
                         def next = oe.calcNext(nse)
                         next.each {
-                            headEvents.putIfAbsent(it.p, new ArrayList<SpawnedEvents>(1))
+                            headEvents.putIfAbsent(it.p, new HashSet<SpawnedEvent>(1))
                             def ses = headEvents.get(it.p)
                             synchronized (ses) {
                                 ses.add(it)
@@ -93,8 +106,14 @@ class Universe {
         currentTime++
     }
 
-    void addOriginalEvent(Point p, SimpleState s) {
-        activeEvents.add(new SourceEvent(currentTime, p, s))
+    /**
+     *
+     * @param p
+     * @param s
+     * @param defRatio - The ratio for picking the transition over the origin state
+     */
+    void addOriginalEvent(Point p, SimpleState s, int defRatio) {
+        activeEvents.add(new SourceEvent(currentTime, p, defRatio, s))
     }
 
 }

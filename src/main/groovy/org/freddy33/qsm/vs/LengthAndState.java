@@ -14,6 +14,10 @@ public class LengthAndState {
 
     @Override
     public String toString() {
+        return "LS{" + st.name() + " " + length + "}";
+    }
+
+    public String fullString() {
         return "LengthAndState{" +
                 "length=" + length +
                 ", st=" + st +

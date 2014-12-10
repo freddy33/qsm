@@ -1,9 +1,6 @@
 package org.freddy33.qsm.vs;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -14,44 +11,61 @@ public class SourceEvent {
     final static AtomicLong counter = new AtomicLong(0);
     final long id;
     final int time;
+    final int transitionOverOriginRatio;
     final Point origin;
     final SimpleState state;
-    Map<Point, SpawnedEvents> current = new ConcurrentHashMap<>();
-    final Map<Point, SpawnedEvents> used = new HashMap<>();
+    final Map<Point, SpawnedEvent> used = new HashMap<>();
+    final Random random;
+    Map<Point, SpawnedEvent> current = new ConcurrentHashMap<>();
 
-    public SourceEvent(int time, Point origin, SimpleState state) {
+    public SourceEvent(int time, Point origin, int transitionOverOriginRatio, SimpleState state) {
+        this.transitionOverOriginRatio = transitionOverOriginRatio;
         this.id = counter.getAndIncrement();
         this.time = time;
         this.origin = origin;
         this.state = state;
-        SpawnedEvents se = new SpawnedEvents(this, origin, 0);
+        SpawnedEvent se = new SpawnedEvent(this, origin, 0);
         this.current.put(origin, se);
         se.add(state);
+        random = new Random(id + time + origin.hashCode());
     }
 
-    public Map<Point, SpawnedEvents> pollCurrent() {
+    public Map<Point, SpawnedEvent> pollCurrent() {
         used.putAll(current);
-        Map<Point, SpawnedEvents> res = current;
+        Map<Point, SpawnedEvent> res = current;
         current = new ConcurrentHashMap<>();
         return res;
     }
 
-    List<SpawnedEvents> calcNext(SpawnedEvents se) {
-        List<SpawnedEvents> res = new ArrayList<>(se.states.size() * 3);
+    Set<SpawnedEvent> calcNext(SpawnedEvent se) {
+        Set<SpawnedEvent> res = new HashSet<>(se.states.size() * 3);
         for (SimpleState s : se.states) {
-            StateTransition trs = StateTransition.pickOne(s);
-            for (SimpleState ns : trs.next) {
-                Point np = se.p.add(ns);
-                // If the next point was never used continue
-                if (!used.containsKey(np)) {
-                    current.putIfAbsent(np, new SpawnedEvents(this, np, se.length + 1));
-                    SpawnedEvents newSe = current.get(np);
-                    newSe.add(ns);
-                    res.add(newSe);
+            StateTransition trs = StateTransition.pickOne(s, random, transitionOverOriginRatio, state);
+            if (trs == null) {
+                // Just make one new state for original state
+                spawnNewEvent(se, res, state);
+            } else {
+                for (SimpleState ns : trs.next) {
+                    spawnNewEvent(se, res, ns);
                 }
             }
         }
         return res;
+    }
+
+    private void spawnNewEvent(SpawnedEvent se, Set<SpawnedEvent> res, SimpleState ns) {
+        Point np = se.p.add(ns);
+        // If the next point was never used continue
+        if (!used.containsKey(np)) {
+            SpawnedEvent newSe = new SpawnedEvent(this, np, se.length + 1);
+            current.putIfAbsent(np, newSe);
+            SpawnedEvent realNewSe = current.get(np);
+            if (!realNewSe.equals(newSe)) {
+                throw new IllegalStateException("Spawned Event " + newSe + " should be equal to " + realNewSe);
+            }
+            realNewSe.add(ns);
+            res.add(realNewSe);
+        }
     }
 
     @Override

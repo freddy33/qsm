@@ -1,7 +1,6 @@
 package org.freddy33.qsm.vs;
 
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 
 import static org.freddy33.qsm.vs.SimpleState.*;
 import static org.freddy33.qsm.vs.SimpleStateGroup.*;
@@ -113,9 +112,15 @@ public enum StateTransition {
         verify();
     }
 
-    static StateTransition pickOne(SimpleState from) {
+    static StateTransition pickOne(SimpleState from, Random random, int defaultRatio, SimpleState defaultState) {
         List<StateTransition> possibles = transitions.get(from);
-        return possibles.get(ThreadLocalRandom.current().nextInt(possibles.size()));
+        int nbPossibles = possibles.size();
+        int index = random.nextInt((defaultRatio + 1) * nbPossibles);
+        if (index < nbPossibles)
+            return null;
+        else {
+            return possibles.get(index % nbPossibles);
+        }
     }
 
     static void verifyAll() {

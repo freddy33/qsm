@@ -20,16 +20,15 @@ class Universe {
     public static void main(String[] args) {
         def nt = System.nanoTime()
         def uni = new Universe()
-        def trsOverDef = 2
-        uni.addOriginalEvent(new Point(0, 0, 0), SimpleState.S1, trsOverDef)
-        uni.addOriginalEvent(new Point(0, -10, 10), SimpleState.S1, trsOverDef)
-        uni.addOriginalEvent(new Point(0, -10, -10), SimpleState.S1, trsOverDef)
-        uni.addOriginalEvent(new Point(0, 14, 0), SimpleState.S1, trsOverDef)
+        def trSize = 42
+        uni.addOriginalEvent(new Point(0, 0, 0), SimpleState.S1)
+        uni.addOriginalEvent(new Point(0, -trSize, trSize), SimpleState.S1)
+        uni.addOriginalEvent(new Point(0, -trSize, -trSize), SimpleState.S1)
+        uni.addOriginalEvent(new Point(0, (int) (Math.sqrt(2 * trSize * trSize)), 0), SimpleState.S1)
         println uni.activeEvents.size()
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 400; i++) {
             uni.calcNext()
-            println uni.activeEvents.size()
-            println uni.headEvents.size()
+            println "$i: ${uni.activeEvents.size()} ${uni.headEvents.size()}"
             uni.findNewEvents()
             if (stop) break;
         }
@@ -102,7 +101,8 @@ class Universe {
                 }
             }
         }
-        println "calc next of $currentTime took ${System.nanoTime() - nt}ns"
+        if (debug)
+            println "calc next of $currentTime took ${System.nanoTime() - nt}ns"
         currentTime++
     }
 
@@ -110,10 +110,9 @@ class Universe {
      *
      * @param p
      * @param s
-     * @param defRatio - The ratio for picking the transition over the origin state
      */
-    void addOriginalEvent(Point p, SimpleState s, int defRatio) {
-        activeEvents.add(new SourceEvent(currentTime, p, defRatio, s))
+    void addOriginalEvent(Point p, SimpleState s) {
+        activeEvents.add(new SourceEvent(currentTime, p, s))
     }
 
 }

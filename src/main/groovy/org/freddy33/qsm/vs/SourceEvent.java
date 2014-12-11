@@ -9,25 +9,30 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class SourceEvent {
     final static AtomicLong counter = new AtomicLong(0);
+
     final long id;
     final int time;
-    final int transitionOverOriginRatio;
     final Point origin;
     final SimpleState state;
     final Map<Point, SpawnedEvent> used = new HashMap<>();
     final Random random;
+    final TransitionRatio transitionRatio;
     Map<Point, SpawnedEvent> current = new ConcurrentHashMap<>();
 
-    public SourceEvent(int time, Point origin, int transitionOverOriginRatio, SimpleState state) {
-        this.transitionOverOriginRatio = transitionOverOriginRatio;
+    public SourceEvent(int time, Point origin, SimpleState state) {
         this.id = counter.getAndIncrement();
         this.time = time;
         this.origin = origin;
         this.state = state;
-        SpawnedEvent se = new SpawnedEvent(this, origin, 0);
+        SpawnedEvent se = new SpawnedEvent(this, origin, 0, state);
         this.current.put(origin, se);
-        se.add(state);
-        random = new Random(id + time + origin.hashCode());
+        if (Controls.useRandom) {
+            this.random = new Random(id + time + origin.hashCode());
+            this.transitionRatio = Controls.defaultRatio;
+        } else {
+            this.random = null;
+            this.transitionRatio = null;
+        }
     }
 
     public Map<Point, SpawnedEvent> pollCurrent() {
@@ -38,34 +43,71 @@ public class SourceEvent {
     }
 
     Set<SpawnedEvent> calcNext(SpawnedEvent se) {
-        Set<SpawnedEvent> res = new HashSet<>(se.states.size() * 3);
+        Set<SpawnedEvent> res = new HashSet<>(se.states.size());
         for (SimpleState s : se.states) {
-            StateTransition trs = StateTransition.pickOne(s, random, transitionOverOriginRatio, state);
-            if (trs == null) {
-                // Just make one new state for original state
-                spawnNewEvent(se, res, state);
-            } else {
-                for (SimpleState ns : trs.next) {
-                    spawnNewEvent(se, res, ns);
-                }
+            Point nextPoint = se.p.add(s);
+            SimpleState[] nextStates = nextStates(se, s);
+            SpawnedEvent nextEvent = spawnNewEvent(nextPoint, se.length + 1, nextStates);
+            if (nextEvent != null) {
+                res.add(nextEvent);
             }
         }
         return res;
     }
 
-    private void spawnNewEvent(SpawnedEvent se, Set<SpawnedEvent> res, SimpleState ns) {
-        Point np = se.p.add(ns);
+    SimpleState[] nextStates(SpawnedEvent se, SimpleState s) {
+        if (Controls.useRandom) {
+            return nextStatesRandom(se, s);
+        } else {
+            return nextStatesSequential(se, s);
+        }
+    }
+
+    SimpleState[] nextStatesSequential(SpawnedEvent se, SimpleState s) {
+        int left = se.length % 3;
+        int block = (se.length - left) / 3;
+        switch (left) {
+            case 0:
+                List<StateTransition> possibles = StateTransition.transitions.get(s);
+                return possibles.get(block % possibles.size()).next;
+            case 1:
+                return new SimpleState[]{s};
+            case 2:
+                return new SimpleState[]{state};
+        }
+        throw new IllegalStateException("Modulo 3 should return 0,1,2");
+    }
+
+    SimpleState[] nextStatesRandom(SpawnedEvent se, SimpleState s) {
+        List<StateTransition> possibles = StateTransition.transitions.get(s);
+        int nbPossibles = possibles.size();
+        // 3 blocks in order for origin, split, same
+        int index = random.nextInt(transitionRatio.total() * nbPossibles);
+        if (index < (nbPossibles * transitionRatio.origin)) {
+            return new SimpleState[]{state};
+        } else if (index >= (nbPossibles * transitionRatio.origin) && index < (nbPossibles * (transitionRatio.origin + transitionRatio.split))) {
+            return possibles.get(index % nbPossibles).next;
+        } else {
+            return new SimpleState[]{s};
+        }
+    }
+
+    private SpawnedEvent spawnNewEvent(Point np, int length, SimpleState[] ns) {
         // If the next point was never used continue
         if (!used.containsKey(np)) {
-            SpawnedEvent newSe = new SpawnedEvent(this, np, se.length + 1);
-            current.putIfAbsent(np, newSe);
-            SpawnedEvent realNewSe = current.get(np);
-            if (!realNewSe.equals(newSe)) {
-                throw new IllegalStateException("Spawned Event " + newSe + " should be equal to " + realNewSe);
+            SpawnedEvent newSe = new SpawnedEvent(this, np, length, ns);
+            SpawnedEvent existingSe = current.putIfAbsent(np, newSe);
+            if (existingSe != null) {
+                if (!existingSe.equals(newSe)) {
+                    throw new IllegalStateException("Spawned Event " + newSe + " should be equal to " + existingSe);
+                }
+                existingSe.add(ns);
+                return existingSe;
+            } else {
+                return newSe;
             }
-            realNewSe.add(ns);
-            res.add(realNewSe);
         }
+        return null;
     }
 
     @Override

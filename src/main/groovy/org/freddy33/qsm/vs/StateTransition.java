@@ -112,17 +112,6 @@ public enum StateTransition {
         verify();
     }
 
-    static StateTransition pickOne(SimpleState from, Random random, int defaultRatio, SimpleState defaultState) {
-        List<StateTransition> possibles = transitions.get(from);
-        int nbPossibles = possibles.size();
-        int index = random.nextInt((defaultRatio + 1) * nbPossibles);
-        if (index < nbPossibles)
-            return null;
-        else {
-            return possibles.get(index % nbPossibles);
-        }
-    }
-
     static void verifyAll() {
         for (StateTransition str : values()) {
             List<StateTransition> fromTrans = transitions.get(str.from);

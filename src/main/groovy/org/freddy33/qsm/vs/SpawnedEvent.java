@@ -1,5 +1,6 @@
 package org.freddy33.qsm.vs;
 
+import java.util.Collections;
 import java.util.EnumSet;
 
 /**
@@ -18,9 +19,20 @@ public class SpawnedEvent {
         this.states = EnumSet.noneOf(SimpleState.class);
     }
 
-    void add(SimpleState s) {
-        synchronized (states) {
-            states.add(s);
+    public SpawnedEvent(SourceEvent origin, Point p, int length, SimpleState... s) {
+        this.origin = origin;
+        this.p = p;
+        this.length = length;
+        if (s.length == 1) {
+            this.states = EnumSet.of(s[0]);
+        } else {
+            this.states = EnumSet.of(s[0], s);
+        }
+    }
+
+    void add(SimpleState[] newStates) {
+        synchronized (this.states) {
+            Collections.addAll(this.states, newStates);
         }
     }
 

@@ -63,7 +63,7 @@ public class SourceEvent {
         }
     }
 
-    static int[] sequence = new int[]{0, 2, 0};
+    static int[] sequence = new int[]{0, 2, 0, 0};
 
     SimpleState[] nextStatesSequential(SpawnedEvent se, SimpleState s) {
         int left = se.length % sequence.length;

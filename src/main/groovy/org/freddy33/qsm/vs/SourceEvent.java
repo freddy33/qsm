@@ -63,10 +63,12 @@ public class SourceEvent {
         }
     }
 
+    static int[] sequence = new int[]{0, 2, 0};
+
     SimpleState[] nextStatesSequential(SpawnedEvent se, SimpleState s) {
-        int left = se.length % 3;
-        int block = (se.length - left) / 3;
-        switch (left) {
+        int left = se.length % sequence.length;
+        int block = (se.length - left) / sequence.length;
+        switch (sequence[left]) {
             case 0:
                 List<StateTransition> possibles = StateTransition.transitions.get(s);
                 return possibles.get(block % possibles.size()).next;

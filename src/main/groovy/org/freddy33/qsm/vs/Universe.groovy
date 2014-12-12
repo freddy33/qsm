@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 
 class Universe {
-    static boolean debug = true
+    static boolean debug = false
     static boolean stop = false
     int currentTime = 0
     List<SourceEvent> activeEvents = []
@@ -22,9 +22,9 @@ class Universe {
         def uni = new Universe()
         def trSize = 42
         uni.addOriginalEvent(new Point(0, 0, 0), SimpleState.S1)
-        uni.addOriginalEvent(new Point(0, -trSize, trSize), SimpleState.S1)
-        uni.addOriginalEvent(new Point(0, -trSize, -trSize), SimpleState.S1)
-        uni.addOriginalEvent(new Point(0, (int) (Math.sqrt(2 * trSize * trSize)), 0), SimpleState.S1)
+        uni.addOriginalEvent(new Point(0, -trSize, (int) (1.732 * trSize)), SimpleState.S1)
+        uni.addOriginalEvent(new Point(0, -trSize, -(int) (1.732 * trSize)), SimpleState.S1)
+        uni.addOriginalEvent(new Point(0, 2 * trSize, 0), SimpleState.S1)
         println uni.activeEvents.size()
         for (int i = 0; i < 400; i++) {
             uni.calcNext()

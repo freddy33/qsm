@@ -4,6 +4,6 @@ package org.freddy33.qsm.vs;
  * @author freds on 12/11/14.
  */
 public abstract class Controls {
-    static boolean useRandom = true;
+    static boolean useRandom = false;
     static TransitionRatio defaultRatio = new TransitionRatio(3, 9, 1);
 }

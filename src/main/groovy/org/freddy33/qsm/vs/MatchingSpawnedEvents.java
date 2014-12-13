@@ -12,7 +12,7 @@ public class MatchingSpawnedEvents {
     final Point p;
     final LengthAndState ls;
     final Set<SpawnedEvent> match = new HashSet<>(3);
-    private List<SourceEvent> sourceInvolved;
+    private Set<SourceEvent> sourceInvolved;
 
     public MatchingSpawnedEvents(Point p, LengthAndState ls) {
         this.p = p;
@@ -33,15 +33,15 @@ public class MatchingSpawnedEvents {
     }
 
     boolean isValid() {
-        return match.size() >= 3;
+        return match.size() >= 3 && getSourcesInvolved().size() >= 3;
     }
 
-    List<SourceEvent> getSourceInvolved() {
+    Set<SourceEvent> getSourcesInvolved() {
         if (sourceInvolved == null) {
             if (match.size() < 3) {
                 throw new IllegalArgumentException("Not enough matching elements");
             }
-            sourceInvolved = new ArrayList<>(match.size());
+            sourceInvolved = new HashSet<>(match.size());
             for (SpawnedEvent se : match) {
                 sourceInvolved.add(se.origin);
             }

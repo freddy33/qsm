@@ -5,5 +5,5 @@ package org.freddy33.qsm.vs;
  */
 public abstract class Controls {
     static boolean useRandom = true;
-    static TransitionRatio defaultRatio = new TransitionRatio(1, 3, 0);
+    static TransitionRatio defaultRatio = new TransitionRatio(2, 4, 0);
 }

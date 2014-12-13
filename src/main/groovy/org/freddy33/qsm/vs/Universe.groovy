@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 
 class Universe {
-    static boolean debug = false
+    static boolean debug = true
     static boolean stop = false
     int currentTime = 0
     List<SourceEvent> activeEvents = []
@@ -20,7 +20,7 @@ class Universe {
     public static void main(String[] args) {
         def nt = System.nanoTime()
         def uni = new Universe()
-        def trSize = 42
+        def trSize = 30
         uni.addOriginalEvent(new Point(0, 0, 0), SimpleState.S1)
         uni.addOriginalEvent(new Point(0, -trSize, (int) (1.732 * trSize)), SimpleState.S1)
         uni.addOriginalEvent(new Point(0, -trSize, -(int) (1.732 * trSize)), SimpleState.S1)
@@ -28,15 +28,17 @@ class Universe {
         println uni.activeEvents.size()
         for (int i = 0; i < 400; i++) {
             uni.calcNext()
-            println "$i: ${uni.activeEvents.size()} ${uni.headEvents.size()}"
             uni.findNewEvents()
             if (stop) break;
         }
-        println "Total calc for ${uni.currentTime} took ${System.nanoTime() - nt}ns"
+        printf("Total calc for %d took %,d ns", uni.currentTime, System.nanoTime() - nt)
     }
 
     void findNewEvents() {
-        ConcurrentMap<SourceEvent, Set<MatchingSpawnedEvents>> matchPerSource = new ConcurrentHashMap<>(activeEvents.size())
+        Map<SourceEvent, MatchingEventsForSource> matchPerSource = new HashMap<>(activeEvents.size())
+        for (SourceEvent sourceEvent : activeEvents) {
+            matchPerSource.put(sourceEvent, new MatchingEventsForSource(sourceEvent))
+        }
         GParsPool.withPool {
             headEvents.eachParallel { Point p, Set<SpawnedEvent> ses ->
                 // Find if we have 3 identical spawned events (length + state)
@@ -55,12 +57,8 @@ class Universe {
                     }
                     result.values().each { MatchingSpawnedEvents mse ->
                         if (mse.isValid()) {
-                            mse.getSourceInvolved().each {
-                                matchPerSource.putIfAbsent(it, new HashSet<MatchingSpawnedEvents>(1))
-                                def lmse = matchPerSource.get(it)
-                                synchronized (lmse) {
-                                    lmse.add(mse)
-                                }
+                            mse.getSourcesInvolved().each {
+                                matchPerSource.get(it).add(mse)
                             }
                         }
                     }
@@ -68,22 +66,31 @@ class Universe {
             }
         }
         // Only sources that have more than 3 matching are relevant
-        def goodMatches = matchPerSource.findAll { k, v -> v.size() >= 3 }
+        def goodMatches = matchPerSource.findAll { k, v -> v.isValid() }
         // If we get a group of 4 we are good
         if (goodMatches.size() >= 4) {
-            goodMatches.each { SourceEvent k, Set<MatchingSpawnedEvents> v ->
-                println "For $k found ${v.size()}"
+            println "Found more than 3 good match at $currentTime"
+            // Order by increasing size to start computing with small matching event sets
+            goodMatches = goodMatches.sort { it.value.spawnedEventsPerSourceSet.size() }
+            goodMatches.each { SourceEvent k, MatchingEventsForSource v ->                
                 if (debug) {
-                    println "match:\n ${v.collect { "${it.p} ${it.ls}" }.join("\n")}"
+                    println "For $k found ${v.spawnedEventsPerSourceSet.size()} source sets"
+                    v.spawnedEventsPerSourceSet.each { Set<SourceEvent> ses, Set<MatchingSpawnedEvents> mse ->
+                        println "For $ses got:\n ${mse.collect { "\t${it.p} ${it.ls}" }.join("\n")}"
+                    }
                 }
+                // Trying to create 3 matching spawned event out of 3 other source event
+                
+
             }
+            
             stop = true
         }
     }
 
     void calcNext() {
         def nt = System.nanoTime()
-        headEvents = new ConcurrentHashMap<>((int) ((headEvents.size() + 3) * 2))
+        headEvents = new ConcurrentHashMap<>((int) (headEvents.size() * 1.2))
         GParsPool.withPool {
             activeEvents.eachParallel { SourceEvent oe ->
                 Map<Point, SpawnedEvent> current = oe.pollCurrent()
@@ -101,8 +108,7 @@ class Universe {
                 }
             }
         }
-        if (debug)
-            println "calc next of $currentTime took ${System.nanoTime() - nt}ns"
+        printf("%d %,d %,d\n", currentTime, headEvents.size(), System.nanoTime() - nt)
         currentTime++
     }
 

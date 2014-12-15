@@ -9,20 +9,13 @@ import java.util.EnumSet;
 public class SpawnedEvent {
     final SourceEvent origin;
     final Point p;
-    final int length;
+    final int time;
     final EnumSet<SimpleState> states;
 
-    public SpawnedEvent(SourceEvent origin, Point p, int length) {
+    public SpawnedEvent(SourceEvent origin, Point p, int time, SimpleState... s) {
         this.origin = origin;
         this.p = p;
-        this.length = length;
-        this.states = EnumSet.noneOf(SimpleState.class);
-    }
-
-    public SpawnedEvent(SourceEvent origin, Point p, int length, SimpleState... s) {
-        this.origin = origin;
-        this.p = p;
-        this.length = length;
+        this.time = time;
         if (s.length == 1) {
             this.states = EnumSet.of(s[0]);
         } else {
@@ -41,7 +34,7 @@ public class SpawnedEvent {
         return "SpawnedEvent{" +
                 "origin=" + origin +
                 ", p=" + p +
-                ", length=" + length +
+                ", length=" + time +
                 ", states=" + states +
                 '}';
     }
@@ -53,6 +46,7 @@ public class SpawnedEvent {
 
         SpawnedEvent that = (SpawnedEvent) o;
 
+        if (time != that.time) return false;
         if (!origin.equals(that.origin)) return false;
         if (!p.equals(that.p)) return false;
 
@@ -63,6 +57,7 @@ public class SpawnedEvent {
     public int hashCode() {
         int result = origin.hashCode();
         result = 31 * result + p.hashCode();
+        result = 31 * result + time;
         return result;
     }
 }

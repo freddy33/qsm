@@ -4,3 +4,4 @@
 *.ipr
 *.iws
 build/
+atlassian-ide-plugin.xml

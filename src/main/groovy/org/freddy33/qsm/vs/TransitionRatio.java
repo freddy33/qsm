@@ -1,29 +1,22 @@
 package org.freddy33.qsm.vs;
 
+import java.util.EnumMap;
+
 /**
  * @author freds on 12/11/14.
  */
 public class TransitionRatio {
-    /**
-     * Ratio for using the simple state of the origin
-     */
-    final int origin;
-    /**
-     * Ratio for using the State Transition splitting in 3
-     */
-    final int split;
-    /**
-     * Ratio for using the same simple state
-     */
-    final int same;
+    final EnumMap<TransitionMode, Integer> mapRatio;
 
-    public TransitionRatio(int origin, int split, int same) {
-        this.origin = origin;
-        this.split = split;
-        this.same = same;
+    public TransitionRatio(int origin, int splitOriginal, int splitIncoming, int same) {
+        mapRatio = new EnumMap<>(TransitionMode.class);
+        mapRatio.put(TransitionMode.backToOriginal, origin);
+        mapRatio.put(TransitionMode.transitionFromOriginal, splitOriginal);
+        mapRatio.put(TransitionMode.transitionFromIncoming, splitIncoming);
+        mapRatio.put(TransitionMode.incomingContinue, same);
     }
 
     int total() {
-        return origin + split + same;
+        return mapRatio.values().stream().reduce(0, Integer::sum);
     }
 }

@@ -1,8 +1,6 @@
 package org.freddy33.qsm.vs;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -20,7 +18,7 @@ public class MatchingSpawnedEvents {
     }
 
     void add(SpawnedEvent se) {
-        if (se.length != ls.length) {
+        if (se.time != ls.length) {
             throw new IllegalArgumentException("Spawned Event " + se + " not the correct length " + ls.length);
         }
         if (!se.states.contains(ls.st)) {

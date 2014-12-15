@@ -3,15 +3,12 @@ package org.freddy33.qsm.vs
 import groovyx.gpars.GParsPool
 
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentMap
 
 class Universe {
     static boolean debug = true
     static boolean stop = false
     int currentTime = 0
-    List<SourceEvent> activeEvents = []
-    List<SourceEvent> deadEvents = []
-    ConcurrentMap<Point, Set<SpawnedEvent>> headEvents = new ConcurrentHashMap<>()
+    Set<SourceEvent> activeSourceEvents = new HashSet<>()
 
     static {
         StateTransition.verifyAll()
@@ -20,33 +17,46 @@ class Universe {
     public static void main(String[] args) {
         def nt = System.nanoTime()
         def uni = new Universe()
-        def trSize = 30
+        def trSize = 60
         uni.addOriginalEvent(new Point(0, 0, 0), SimpleState.S1)
         uni.addOriginalEvent(new Point(0, -trSize, (int) (1.732 * trSize)), SimpleState.S1)
         uni.addOriginalEvent(new Point(0, -trSize, -(int) (1.732 * trSize)), SimpleState.S1)
         uni.addOriginalEvent(new Point(0, 2 * trSize, 0), SimpleState.S1)
-        println uni.activeEvents.size()
+        println uni.activeSourceEvents.size()
         for (int i = 0; i < 400; i++) {
-            uni.calcNext()
-            uni.findNewEvents()
+            uni.calcNext(uni.findNewEvents())
             if (stop) break;
         }
         printf("Total calc for %d took %,d ns", uni.currentTime, System.nanoTime() - nt)
     }
 
-    void findNewEvents() {
-        Map<SourceEvent, MatchingEventsForSource> matchPerSource = new HashMap<>(activeEvents.size())
-        for (SourceEvent sourceEvent : activeEvents) {
+    Set<SpawnedEvent> findNewEvents() {
+        Set<SpawnedEvent> toCalcNext = new HashSet<>()
+        Map<Point, Set<SpawnedEvent>> possibleMatch = new ConcurrentHashMap<>()
+
+        Map<SourceEvent, MatchingEventsForSource> matchPerSource = new HashMap<>(activeSourceEvents.size())
+        for (SourceEvent sourceEvent : activeSourceEvents) {
             matchPerSource.put(sourceEvent, new MatchingEventsForSource(sourceEvent))
+            def current = sourceEvent.pollCurrent(currentTime)
+            GParsPool.withPool {
+                current.eachParallel { p, se ->
+                    possibleMatch.putIfAbsent(p, new HashSet<>())
+                    def events = possibleMatch.get(p)
+                    synchronized (events) {
+                        events.add(se)
+                    }
+                }
+            }
+            toCalcNext.addAll(current.values())
         }
         GParsPool.withPool {
-            headEvents.eachParallel { Point p, Set<SpawnedEvent> ses ->
+            possibleMatch.eachParallel { Point p, Set<SpawnedEvent> ses ->
                 // Find if we have 3 identical spawned events (length + state)
                 if (ses && ses.size() >= 3) {
                     Map<LengthAndState, MatchingSpawnedEvents> result = new HashMap<>()
                     ses.each { SpawnedEvent se ->
                         se.states.each { SimpleState s ->
-                            def key = new LengthAndState(se.length, s)
+                            def key = new LengthAndState(se.time, s)
                             MatchingSpawnedEvents events = result.get(key)
                             if (events == null) {
                                 events = new MatchingSpawnedEvents(p, key)
@@ -86,29 +96,17 @@ class Universe {
             
             stop = true
         }
+        return toCalcNext
     }
 
-    void calcNext() {
+    void calcNext(Set<SpawnedEvent> events) {
         def nt = System.nanoTime()
-        headEvents = new ConcurrentHashMap<>((int) (headEvents.size() * 1.2))
         GParsPool.withPool {
-            activeEvents.eachParallel { SourceEvent oe ->
-                Map<Point, SpawnedEvent> current = oe.pollCurrent()
-                GParsPool.withPool {
-                    current.eachParallel { Point p, SpawnedEvent nse ->
-                        def next = oe.calcNext(nse)
-                        next.each {
-                            headEvents.putIfAbsent(it.p, new HashSet<SpawnedEvent>(1))
-                            def ses = headEvents.get(it.p)
-                            synchronized (ses) {
-                                ses.add(it)
-                            }
-                        }
-                    }
-                }
+            events.eachParallel { SpawnedEvent se ->
+                se.origin.calcNext(se)
             }
         }
-        printf("%d %,d %,d\n", currentTime, headEvents.size(), System.nanoTime() - nt)
+        printf("%d %,d %,d\n", currentTime, events.size(), System.nanoTime() - nt)
         currentTime++
     }
 
@@ -118,7 +116,7 @@ class Universe {
      * @param s
      */
     void addOriginalEvent(Point p, SimpleState s) {
-        activeEvents.add(new SourceEvent(currentTime, p, s))
+        activeSourceEvents.add(new SourceEvent(currentTime, p, s))
     }
 
 }

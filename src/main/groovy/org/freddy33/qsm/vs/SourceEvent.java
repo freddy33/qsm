@@ -14,18 +14,23 @@ public class SourceEvent {
     final int time;
     final Point origin;
     final SimpleState state;
-    final Map<Point, SpawnedEvent> used = new HashMap<>();
+    final Map<Point, ReducedSpawnedEvent> used = new HashMap<>();
     final Random random;
     final TransitionRatio transitionRatio;
-    Map<Point, SpawnedEvent> current = new ConcurrentHashMap<>();
+    // All the point present in currentPerTime after polling the active ones
+    Set<Point> currentlyUsed = new HashSet<>();
+    // Per time slice list of spawned events
+    Map<Integer, Map<Point, SpawnedEvent>> currentPerTime = new HashMap<>();
 
     public SourceEvent(int time, Point origin, SimpleState state) {
         this.id = counter.getAndIncrement();
         this.time = time;
         this.origin = origin;
         this.state = state;
-        SpawnedEvent se = new SpawnedEvent(this, origin, 0, state);
-        this.current.put(origin, se);
+        SpawnedEvent se = new SpawnedEvent(this, origin, time, state);
+        HashMap<Point, SpawnedEvent> currentSpawned = new HashMap<>(1);
+        this.currentPerTime.put(time, currentSpawned);
+        currentSpawned.put(origin, se);
         if (Controls.useRandom) {
             this.random = new Random(id + time + origin.hashCode());
             this.transitionRatio = Controls.defaultRatio;
@@ -35,24 +40,34 @@ public class SourceEvent {
         }
     }
 
-    public Map<Point, SpawnedEvent> pollCurrent() {
-        used.putAll(current);
-        Map<Point, SpawnedEvent> res = current;
-        current = new ConcurrentHashMap<>();
-        return res;
+    public synchronized Map<Point, SpawnedEvent> pollCurrent(int currentTime) {
+        Map<Point, SpawnedEvent> currentSpawned = currentPerTime.remove(currentTime);
+        if (currentSpawned == null) {
+            // There should always be something at the time
+            throw new IllegalStateException("Asking for states at time " + currentTime + " return null data!");
+        }
+        for (SpawnedEvent event : currentSpawned.values()) {
+            used.put(event.p, new ReducedSpawnedEvent(event));
+        }
+        currentlyUsed = new HashSet<>();
+        for (Map<Point, SpawnedEvent> eventMap : currentPerTime.values()) {
+            currentlyUsed.addAll(eventMap.keySet());
+        }
+        for (int i = 0; i < 6; i++) {
+            int nextTime = currentTime + i;
+            if (!currentPerTime.containsKey(nextTime)) {
+                currentPerTime.put(nextTime, new ConcurrentHashMap<>());
+            }
+        }
+        return currentSpawned;
     }
 
-    Set<SpawnedEvent> calcNext(SpawnedEvent se) {
-        Set<SpawnedEvent> res = new HashSet<>(se.states.size());
+    void calcNext(SpawnedEvent se) {
         for (SimpleState s : se.states) {
             Point nextPoint = se.p.add(s);
             SimpleState[] nextStates = nextStates(se, s);
-            SpawnedEvent nextEvent = spawnNewEvent(nextPoint, se.length + 1, nextStates);
-            if (nextEvent != null) {
-                res.add(nextEvent);
-            }
+            spawnNewEvent(nextPoint, se.time + s.stateGroup.deltaTime, nextStates);
         }
-        return res;
     }
 
     SimpleState[] nextStates(SpawnedEvent se, SimpleState s) {
@@ -63,42 +78,59 @@ public class SourceEvent {
         }
     }
 
-    static int[] sequence = new int[]{0, 2, 0, 0};
-
     SimpleState[] nextStatesSequential(SpawnedEvent se, SimpleState s) {
-        int left = se.length % sequence.length;
-        int block = (se.length - left) / sequence.length;
-        switch (sequence[left]) {
-            case 0:
-                List<StateTransition> possibles = StateTransition.transitions.get(s);
-                return possibles.get(block % possibles.size()).next;
-            case 1:
-                return new SimpleState[]{s};
-            case 2:
-                return new SimpleState[]{state};
-        }
-        throw new IllegalStateException("Modulo 3 should return 0,1,2");
+        int abs = se.time;
+        //int abs = Math.abs(se.hashCode());
+        int left = abs % Controls.sequence.length;
+        int transitionSelect = (abs - left) / Controls.sequence.length;
+        TransitionMode transitionMode = Controls.sequence[left];
+        return getNextSimpleStates(s, transitionMode, transitionSelect);
     }
 
     SimpleState[] nextStatesRandom(SpawnedEvent se, SimpleState s) {
-        List<StateTransition> possibles = StateTransition.transitions.get(s);
-        int nbPossibles = possibles.size();
-        // 3 blocks in order for origin, split, same
-        int index = random.nextInt(transitionRatio.total() * nbPossibles);
-        if (index < (nbPossibles * transitionRatio.origin)) {
-            return new SimpleState[]{state};
-        } else if (index >= (nbPossibles * transitionRatio.origin) && index < (nbPossibles * (transitionRatio.origin + transitionRatio.split))) {
-            return possibles.get(index % nbPossibles).next;
-        } else {
-            return new SimpleState[]{s};
+        // Blocks in order of TransitionMode
+        int modeSelect = random.nextInt(transitionRatio.total());
+        TransitionMode mode = null;
+        int i = 0;
+        for (TransitionMode transitionMode : TransitionMode.values()) {
+            int ratio = transitionRatio.mapRatio.get(transitionMode);
+            if (modeSelect >= i && modeSelect < (i + ratio)) {
+                mode = transitionMode;
+                break;
+            }
+            i += ratio;
         }
+        if (mode == null) {
+            throw new IllegalStateException("Did not find a mode using " + modeSelect + " from " + transitionRatio.mapRatio);
+        }
+        return getNextSimpleStates(s, mode, random.nextInt(4));
     }
 
-    private SpawnedEvent spawnNewEvent(Point np, int length, SimpleState[] ns) {
+    private SimpleState[] getNextSimpleStates(SimpleState s, TransitionMode transitionMode, int transitionSelect) {
+        switch (transitionMode) {
+            case transitionFromOriginal: {
+                // Always pick transitions from original state
+                List<StateTransition> possibles = StateTransition.transitions.get(state);
+                return possibles.get(transitionSelect % possibles.size()).next;
+            }
+            case transitionFromIncoming: {
+                // Pick transitions from incoming state
+                List<StateTransition> possibles = StateTransition.transitions.get(s);
+                return possibles.get(transitionSelect % possibles.size()).next;
+            }
+            case incomingContinue:
+                return new SimpleState[]{s};
+            case backToOriginal:
+                return new SimpleState[]{state};
+        }
+        throw new IllegalStateException("Modulo " + Arrays.toString(TransitionMode.values()) + " should return");
+    }
+
+    private SpawnedEvent spawnNewEvent(Point np, int time, SimpleState[] ns) {
         // If the next point was never used continue
-        if (!used.containsKey(np)) {
-            SpawnedEvent newSe = new SpawnedEvent(this, np, length, ns);
-            SpawnedEvent existingSe = current.putIfAbsent(np, newSe);
+        if (!currentlyUsed.contains(np) && !used.containsKey(np)) {
+            SpawnedEvent newSe = new SpawnedEvent(this, np, time, ns);
+            SpawnedEvent existingSe = currentPerTime.get(time).putIfAbsent(np, newSe);
             if (existingSe != null) {
                 if (!existingSe.equals(newSe)) {
                     throw new IllegalStateException("Spawned Event " + newSe + " should be equal to " + existingSe);

@@ -6,9 +6,9 @@ package org.freddy33.qsm.vs;
 public enum SimpleStateGroup {
     ZERO(1), ONE(3), TWO(4), THREE(5);
 
-    final int deltaTime;
+    final int delta;
 
-    SimpleStateGroup(int deltaTime) {
-        this.deltaTime = deltaTime;
+    SimpleStateGroup(int delta) {
+        this.delta = delta;
     }
 }

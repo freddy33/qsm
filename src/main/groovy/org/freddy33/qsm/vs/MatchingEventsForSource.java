@@ -17,10 +17,10 @@ public class MatchingEventsForSource {
         this.spawnedEventsPerSourceSet = new ConcurrentHashMap<>(1);
     }
 
-    void add(MatchingSpawnedEvents mse) {
+    void add(BaseMatchingSpawnedEvents mse) {
         Set<SourceEvent> sourcesInvolved = mse.getSourcesInvolved();
         if (!sourcesInvolved.contains(source)) {
-            throw new IllegalArgumentException("Matching event "+mse+" does not match "+source);
+            throw new IllegalArgumentException("Matching event " + mse + " does not match " + source);
         }
         spawnedEventsPerSourceSet.putIfAbsent(sourcesInvolved, new HashSet<>(1));
         Set<MatchingSpawnedEvents> matchingSpawnedEventsSet = spawnedEventsPerSourceSet.get(sourcesInvolved);

@@ -6,11 +6,11 @@ import java.util.EnumSet;
  * @author freds on 12/8/14.
  */
 public class ReducedSpawnedEvent {
-    final int time;
+    final int length;
     final EnumSet<SimpleState> states;
 
     public ReducedSpawnedEvent(SpawnedEvent se) {
-        this.time = se.time;
+        this.length = se.length;
         this.states = se.states;
     }
 }

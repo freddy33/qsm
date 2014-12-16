@@ -40,7 +40,7 @@ class Universe {
                     possibleMatch.putIfAbsent(p, new HashSet<>())
                     def events = possibleMatch.get(p)
                     synchronized (events) {
-                        events.add(se)
+                        events.add(null, se)
                     }
                 }
             }
@@ -50,19 +50,19 @@ class Universe {
             possibleMatch.eachParallel { Point p, Set<SpawnedEvent> ses ->
                 // Find if we have 3 identical spawned events (length + state)
                 if (ses && ses.size() >= 3) {
-                    Map<LengthAndState, MatchingSpawnedEvents> result = new HashMap<>()
+                    Map<LengthAndState, MatchingLengthAndStateSpawnedEvents> result = new HashMap<>()
                     ses.each { SpawnedEvent se ->
                         se.states.each { SimpleState s ->
-                            def key = new LengthAndState(se.time, s)
-                            MatchingSpawnedEvents events = result.get(key)
+                            def key = new LengthAndState(se.length, s)
+                            MatchingLengthAndStateSpawnedEvents events = result.get(key)
                             if (events == null) {
-                                events = new MatchingSpawnedEvents(p, key)
+                                events = new MatchingLengthAndStateSpawnedEvents(p, key, state)
                                 result.put(key, events)
                             }
-                            events.add(se)
+                            events.add(null, se)
                         }
                     }
-                    result.values().each { MatchingSpawnedEvents mse ->
+                    result.values().each { MatchingLengthAndStateSpawnedEvents mse ->
                         if (mse.isValid()) {
                             mse.getSourcesInvolved().each {
                                 matchPerSource.get(it).add(mse)
@@ -82,7 +82,7 @@ class Universe {
             goodMatches.each { SourceEvent k, MatchingEventsForSource v ->                
                 if (debug) {
                     println "For $k found ${v.spawnedEventsPerSourceSet.size()} source sets"
-                    v.spawnedEventsPerSourceSet.each { Set<SourceEvent> ses, Set<MatchingSpawnedEvents> mse ->
+                    v.spawnedEventsPerSourceSet.each { Set<SourceEvent> ses, Set<MatchingLengthAndStateSpawnedEvents> mse ->
                         println "For $ses got:\n ${mse.collect { "\t${it.p} ${it.ls}" }.join("\n")}"
                     }
                 }

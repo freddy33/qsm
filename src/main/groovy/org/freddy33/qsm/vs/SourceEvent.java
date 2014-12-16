@@ -18,19 +18,19 @@ public class SourceEvent {
     final Random random;
     final TransitionRatio transitionRatio;
     // All the point present in currentPerTime after polling the active ones
-    Set<Point> currentlyUsed = new HashSet<>();
+    Map<Point, Point> currentlyUsed = new ConcurrentHashMap<>();
     // Per time slice list of spawned events
-    Map<Integer, Map<Point, SpawnedEvent>> currentPerTime = new HashMap<>();
+    Map<Integer, Map<SpawnedEvent, SpawnedEvent>> currentPerTime = new HashMap<>();
 
     public SourceEvent(int time, Point origin, SimpleState state) {
         this.id = counter.getAndIncrement();
         this.time = time;
         this.origin = origin;
         this.state = state;
-        SpawnedEvent se = new SpawnedEvent(this, origin, time, 0, state);
-        HashMap<Point, SpawnedEvent> currentSpawned = new HashMap<>(1);
+        SpawnedEvent se = new SpawnedEvent(origin, 0, 0, state);
+        Map<SpawnedEvent, SpawnedEvent> currentSpawned = new HashMap<>(1);
         this.currentPerTime.put(time, currentSpawned);
-        currentSpawned.put(origin, se);
+        currentSpawned.put(se, se);
         if (Controls.useRandom) {
             this.random = new Random(id + time + origin.hashCode());
             this.transitionRatio = Controls.defaultRatio;
@@ -40,43 +40,73 @@ public class SourceEvent {
         }
     }
 
-    public synchronized Map<Point, SpawnedEvent> pollCurrent(int currentTime) {
-        Map<Point, SpawnedEvent> currentSpawned = currentPerTime.remove(currentTime);
+    public Set<SpawnedEvent> peekCurrent(int currentTime) {
+        return currentPerTime.get(currentTime).keySet();
+    }
+
+    public synchronized Set<SpawnedEvent> pollCurrent(int currentTime) {
+        Map<SpawnedEvent, SpawnedEvent> currentSpawned = currentPerTime.remove(currentTime);
         if (currentSpawned == null) {
             // There should always be something at the time
             throw new IllegalStateException("Asking for states at time " + currentTime + " return null data!");
         }
-        for (SpawnedEvent event : currentSpawned.values()) {
+        for (SpawnedEvent event : currentSpawned.keySet()) {
             used.put(event.p, new ReducedSpawnedEvent(event));
         }
-/*
-        currentlyUsed = new HashSet<>();
-        for (Map<Point, SpawnedEvent> eventMap : currentPerTime.values()) {
-            currentlyUsed.addAll(eventMap.keySet());
+        if (Controls.blockCurrentlyUsed) {
+            currentlyUsed = new ConcurrentHashMap<>();
+            for (Map<SpawnedEvent, SpawnedEvent> eventSet : currentPerTime.values()) {
+                eventSet.values().parallelStream().forEach(spawnedEvent -> {
+                    currentlyUsed.put(spawnedEvent.p, spawnedEvent.p);
+                });
+            }
         }
-*/
         for (int i = 1; i < 6; i++) {
             int nextTime = currentTime + i;
             if (!currentPerTime.containsKey(nextTime)) {
                 currentPerTime.put(nextTime, new ConcurrentHashMap<>());
             }
         }
-        return currentSpawned;
+        return currentSpawned.keySet();
     }
 
     void calcNext(SpawnedEvent se) {
-        int i = 0;
+        int i = 1;
         for (SimpleState s : se.states) {
-            Point nextPoint = se.p.add(s);
             SimpleState[] nextStates = nextStates(se, s);
-            spawnNewEvent(nextPoint, se.time + s.stateGroup.deltaTime, se.counter + i, nextStates);
+            if (Controls.nextMode == NextSpawnedMode.moveAndSplit) {
+                spawnNewEvent(se.p.add(s), se.length + s.stateGroup.delta, se.counter + i, nextStates);
+            } else if (Controls.nextMode == NextSpawnedMode.splitAndMove) {
+                int j = 0;
+                for (SimpleState nextState : nextStates) {
+                    spawnNewEvent(se.p.add(nextState), se.length + nextState.stateGroup.delta, se.counter + i + j, nextState);
+                    j++;
+                }
+            } else {
+                throw new IllegalStateException("Next mode " + Controls.nextMode + " not supported!");
+            }
             i++;
         }
     }
 
+    private SpawnedEvent spawnNewEvent(Point np, int length, int counter, SimpleState... ns) {
+        // If the next point was never used continue
+        if ((!Controls.blockCurrentlyUsed || !currentlyUsed.containsKey(np)) && !used.containsKey(np)) {
+            SpawnedEvent newSe = new SpawnedEvent(np, length, counter, ns);
+            SpawnedEvent existingSe = currentPerTime.get(length).putIfAbsent(newSe, newSe);
+            if (existingSe != null) {
+                existingSe.add(ns);
+                return existingSe;
+            } else {
+                return newSe;
+            }
+        }
+        return null;
+    }
+
     SimpleState[] nextStates(SpawnedEvent se, SimpleState s) {
         if (Controls.useRandom) {
-            return nextStatesRandom(se, s);
+            return nextStatesRandom(s);
         } else {
             return nextStatesSequential(se, s);
         }
@@ -97,7 +127,7 @@ public class SourceEvent {
         return getNextSimpleStates(s, transitionMode, transitionSelect);
     }
 
-    SimpleState[] nextStatesRandom(SpawnedEvent se, SimpleState s) {
+    SimpleState[] nextStatesRandom(SimpleState s) {
         // Blocks in order of TransitionMode
         int modeSelect = random.nextInt(transitionRatio.total());
         TransitionMode mode = null;
@@ -134,24 +164,6 @@ public class SourceEvent {
                 return new SimpleState[]{state};
         }
         throw new IllegalStateException("Modulo " + Arrays.toString(TransitionMode.values()) + " should return");
-    }
-
-    private SpawnedEvent spawnNewEvent(Point np, int time, int counter, SimpleState[] ns) {
-        // If the next point was never used continue
-        if (/*!currentlyUsed.contains(np) && */!used.containsKey(np)) {
-            SpawnedEvent newSe = new SpawnedEvent(this, np, time, counter, ns);
-            SpawnedEvent existingSe = currentPerTime.get(time).putIfAbsent(np, newSe);
-            if (existingSe != null) {
-                if (!existingSe.equals(newSe)) {
-                    throw new IllegalStateException("Spawned Event " + newSe + " should be equal to " + existingSe);
-                }
-                existingSe.add(ns);
-                return existingSe;
-            } else {
-                return newSe;
-            }
-        }
-        return null;
     }
 
     @Override

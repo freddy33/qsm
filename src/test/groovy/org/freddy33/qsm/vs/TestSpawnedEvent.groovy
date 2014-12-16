@@ -20,7 +20,7 @@ class TestSpawnedEvent {
         Assert.assertEquals(1, source.currentPerTime.get(0).size())
         def spawn1 = source.currentPerTime.get(0).get(o)
         assertNotNull(spawn1)
-        assertEquals(0, spawn1.time)
+        assertEquals(0, spawn1.length)
         assertEquals(source, spawn1.origin)
         assertEquals(source.origin, spawn1.p)
         assertEquals(EnumSet.of(SimpleState.S1), spawn1.states)
@@ -40,7 +40,7 @@ class TestSpawnedEvent {
         def next = source.currentPerTime.get(3);
         assertEquals(1, next.size())
         def spawn2 = next.get(o.add(SimpleState.S1))
-        assertEquals(3, spawn2.time)
+        assertEquals(3, spawn2.length)
         assertEquals(source, spawn2.origin)
         assertEquals(source.origin.add(SimpleState.S1), spawn2.p)
         assertEquals(EnumSet.of(SimpleState.S7, SimpleState.S9, SimpleState.S24), spawn2.states)

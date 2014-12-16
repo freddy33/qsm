@@ -2,8 +2,6 @@ package org.freddy33.qsm.vs
 
 import groovyx.gpars.GParsPool
 
-import java.util.concurrent.ConcurrentHashMap
-
 class Universe {
     static boolean debug = true
     static boolean stop = false
@@ -17,7 +15,7 @@ class Universe {
     public static void main(String[] args) {
         def nt = System.nanoTime()
         def uni = new Universe()
-        def trSize = 60
+        def trSize = 42
         uni.addOriginalEvent(new Point(0, 0, 0), SimpleState.S1)
         uni.addOriginalEvent(new Point(0, -trSize, (int) (1.732 * trSize)), SimpleState.S1)
         uni.addOriginalEvent(new Point(0, -trSize, -(int) (1.732 * trSize)), SimpleState.S1)
@@ -31,8 +29,7 @@ class Universe {
     }
 
     Set<SpawnedEvent> findNewEvents() {
-        Set<SpawnedEvent> toCalcNext = new HashSet<>()
-        Map<Point, Set<SpawnedEvent>> possibleMatch = new ConcurrentHashMap<>()
+        Set<SpawnedEvent> activeSpawnedEvents = new HashSet<>()
 
         Map<SourceEvent, MatchingEventsForSource> matchPerSource = new HashMap<>(activeSourceEvents.size())
         for (SourceEvent sourceEvent : activeSourceEvents) {
@@ -47,7 +44,7 @@ class Universe {
                     }
                 }
             }
-            toCalcNext.addAll(current.values())
+            activeSpawnedEvents.addAll(current.values())
         }
         GParsPool.withPool {
             possibleMatch.eachParallel { Point p, Set<SpawnedEvent> ses ->
@@ -96,7 +93,7 @@ class Universe {
             
             stop = true
         }
-        return toCalcNext
+        return activeSpawnedEvents
     }
 
     void calcNext(Set<SpawnedEvent> events) {

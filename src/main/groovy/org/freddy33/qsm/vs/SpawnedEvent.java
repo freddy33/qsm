@@ -10,12 +10,14 @@ public class SpawnedEvent {
     final SourceEvent origin;
     final Point p;
     final int time;
+    final int counter;
     final EnumSet<SimpleState> states;
 
-    public SpawnedEvent(SourceEvent origin, Point p, int time, SimpleState... s) {
+    public SpawnedEvent(SourceEvent origin, Point p, int time, int counter, SimpleState... s) {
         this.origin = origin;
         this.p = p;
         this.time = time;
+        this.counter = counter;
         if (s.length == 1) {
             this.states = EnumSet.of(s[0]);
         } else {

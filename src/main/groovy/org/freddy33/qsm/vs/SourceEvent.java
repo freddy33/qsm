@@ -27,7 +27,7 @@ public class SourceEvent {
         this.time = time;
         this.origin = origin;
         this.state = state;
-        SpawnedEvent se = new SpawnedEvent(this, origin, time, state);
+        SpawnedEvent se = new SpawnedEvent(this, origin, time, 0, state);
         HashMap<Point, SpawnedEvent> currentSpawned = new HashMap<>(1);
         this.currentPerTime.put(time, currentSpawned);
         currentSpawned.put(origin, se);
@@ -49,11 +49,13 @@ public class SourceEvent {
         for (SpawnedEvent event : currentSpawned.values()) {
             used.put(event.p, new ReducedSpawnedEvent(event));
         }
+/*
         currentlyUsed = new HashSet<>();
         for (Map<Point, SpawnedEvent> eventMap : currentPerTime.values()) {
             currentlyUsed.addAll(eventMap.keySet());
         }
-        for (int i = 0; i < 6; i++) {
+*/
+        for (int i = 1; i < 6; i++) {
             int nextTime = currentTime + i;
             if (!currentPerTime.containsKey(nextTime)) {
                 currentPerTime.put(nextTime, new ConcurrentHashMap<>());
@@ -63,10 +65,12 @@ public class SourceEvent {
     }
 
     void calcNext(SpawnedEvent se) {
+        int i = 0;
         for (SimpleState s : se.states) {
             Point nextPoint = se.p.add(s);
             SimpleState[] nextStates = nextStates(se, s);
-            spawnNewEvent(nextPoint, se.time + s.stateGroup.deltaTime, nextStates);
+            spawnNewEvent(nextPoint, se.time + s.stateGroup.deltaTime, se.counter + i, nextStates);
+            i++;
         }
     }
 
@@ -79,10 +83,16 @@ public class SourceEvent {
     }
 
     SimpleState[] nextStatesSequential(SpawnedEvent se, SimpleState s) {
-        int abs = se.time;
-        //int abs = Math.abs(se.hashCode());
-        int left = abs % Controls.sequence.length;
-        int transitionSelect = (abs - left) / Controls.sequence.length;
+        int abs = se.counter;
+        int left;
+        int transitionSelect;
+        if (Controls.sequence.length > 1) {
+            left = abs % Controls.sequence.length;
+            transitionSelect = (abs - left) / Controls.sequence.length;
+        } else {
+            left = 0;
+            transitionSelect = abs;
+        }
         TransitionMode transitionMode = Controls.sequence[left];
         return getNextSimpleStates(s, transitionMode, transitionSelect);
     }
@@ -126,10 +136,10 @@ public class SourceEvent {
         throw new IllegalStateException("Modulo " + Arrays.toString(TransitionMode.values()) + " should return");
     }
 
-    private SpawnedEvent spawnNewEvent(Point np, int time, SimpleState[] ns) {
+    private SpawnedEvent spawnNewEvent(Point np, int time, int counter, SimpleState[] ns) {
         // If the next point was never used continue
-        if (!currentlyUsed.contains(np) && !used.containsKey(np)) {
-            SpawnedEvent newSe = new SpawnedEvent(this, np, time, ns);
+        if (/*!currentlyUsed.contains(np) && */!used.containsKey(np)) {
+            SpawnedEvent newSe = new SpawnedEvent(this, np, time, counter, ns);
             SpawnedEvent existingSe = currentPerTime.get(time).putIfAbsent(np, newSe);
             if (existingSe != null) {
                 if (!existingSe.equals(newSe)) {

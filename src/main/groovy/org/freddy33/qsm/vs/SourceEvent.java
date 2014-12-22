@@ -2,15 +2,15 @@ package org.freddy33.qsm.vs;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author freds on 12/8/14.
  */
 public class SourceEvent {
-    final static AtomicLong counter = new AtomicLong(0);
+    final static AtomicInteger counter = new AtomicInteger(0);
 
-    final long id;
+    final int id;
     final int time;
     final Point origin;
     final SimpleState state;
@@ -93,7 +93,7 @@ public class SourceEvent {
         // If the next point was never used continue
         if ((!Controls.blockCurrentlyUsed || !currentlyUsed.containsKey(np)) && !used.containsKey(np)) {
             SpawnedEvent newSe = new SpawnedEvent(np, length, counter, ns);
-            SpawnedEvent existingSe = currentPerTime.get(length).putIfAbsent(newSe, newSe);
+            SpawnedEvent existingSe = currentPerTime.get(time + length).putIfAbsent(newSe, newSe);
             if (existingSe != null) {
                 existingSe.add(ns);
                 return existingSe;
@@ -180,7 +180,7 @@ public class SourceEvent {
 
     @Override
     public int hashCode() {
-        return (int) (id ^ (id >>> 32));
+        return id;
     }
 
     @Override

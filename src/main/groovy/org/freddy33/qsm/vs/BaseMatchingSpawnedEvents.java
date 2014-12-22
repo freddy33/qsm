@@ -28,7 +28,6 @@ public abstract class BaseMatchingSpawnedEvents implements MatchingSpawnedEvents
 
     @Override
     public Set<SourceEvent> getSourcesInvolved() {
-
         return sourcesInvolved;
     }
 

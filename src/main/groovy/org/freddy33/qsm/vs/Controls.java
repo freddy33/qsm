@@ -9,16 +9,19 @@ enum NextSpawnedMode {
 }
 
 public abstract class Controls {
-    static boolean useRandom = false;
-    static boolean blockCurrentlyUsed = true;
-    static NextSpawnedMode nextMode = NextSpawnedMode.moveAndSplit;
+    static boolean debug = false;
+    static boolean useRandom = true;
+    static boolean blockCurrentlyUsed = false;
+    static NextSpawnedMode nextMode = NextSpawnedMode.splitAndMove;
     static boolean matchAlsoState = false;
 
     // Random ratios
-    static TransitionRatio defaultRatio = new TransitionRatio(1, 3, 9, 0);
+    static TransitionRatio defaultRatio = new TransitionRatio(0, 1, 3, 0);
 
     // Non random sequence
     static TransitionMode[] sequence = new TransitionMode[]{
-            TransitionMode.transitionFromIncoming
+            TransitionMode.transitionFromIncoming,
+            TransitionMode.transitionFromIncoming,
+            TransitionMode.transitionFromOriginal
     };
 }

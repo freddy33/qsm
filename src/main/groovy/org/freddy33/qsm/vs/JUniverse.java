@@ -1,26 +1,42 @@
 package org.freddy33.qsm.vs;
 
+import java.text.MessageFormat;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.freddy33.qsm.vs.SimpleState.S1;
+import static org.freddy33.qsm.vs.SimpleState.*;
 
 /**
  * @author freds on 12/16/14.
  */
 public class JUniverse {
+    public static final int MAX_ROUND = 400;
+    public static final int TRIANGLE_HALF_SIDE = 42;
     static boolean stop = false;
+
     int currentTime = 0;
     Set<SourceEvent> activeSourceEvents = new HashSet<>();
 
     public static void main(String[] args) {
         StateTransition.verifyAll();
+        // MAX_ROUND should be at least X
+        int minTime = TRIANGLE_HALF_SIDE * SimpleStateGroup.ONE.delta;
+        if (MAX_ROUND <= minTime) {
+            throw new IllegalStateException("Cannot reach sync in " + MAX_ROUND + " needs to be minimum " + minTime);
+        }
+        int minWithForward = (int) Math.sqrt(2 * minTime * minTime);
+        if (MAX_ROUND <= minWithForward) {
+            System.err.println("Cannot reach triangle forward sync in " + MAX_ROUND + " needs to be minimum "
+                    + minWithForward + " for a triangle min of " + minTime);
+        }
+        System.out.println("Triangle forward sync in minimum " + minWithForward + " for a triangle of " + minTime);
+
         JUniverse jUniverse = new JUniverse();
         jUniverse.init();
-        for (int i = 0; i < 400; i++) {
+        for (int i = 0; i < MAX_ROUND; i++) {
             jUniverse.findNewEvents();
             jUniverse.calcNext();
             if (stop) break;
@@ -28,11 +44,10 @@ public class JUniverse {
     }
 
     private void init() {
-        int trSize = 42;
-        addOriginalEvent(new Point(0, 0, 0), S1);
-        addOriginalEvent(new Point(0, -trSize, (int) (1.732 * trSize)), S1);
-        addOriginalEvent(new Point(0, -trSize, -(int) (1.732 * trSize)), S1);
-        addOriginalEvent(new Point(0, 2 * trSize, 0), S1);
+        addOriginalEvent(new Point(0, 0, 0), S24, S1);
+        addOriginalEvent(new Point(0, -TRIANGLE_HALF_SIDE, (int) (1.732 * TRIANGLE_HALF_SIDE)), S22, S1);
+        addOriginalEvent(new Point(0, -TRIANGLE_HALF_SIDE, -(int) (1.732 * TRIANGLE_HALF_SIDE)), S19, S1);
+        addOriginalEvent(new Point(0, 2 * TRIANGLE_HALF_SIDE, 0), S21, S1);
     }
 
     private void calcNext() {
@@ -50,24 +65,22 @@ public class JUniverse {
             }
         }
         Map<MatchingSpawnedEvents, MatchingSpawnedEvents> matches = new ConcurrentHashMap<>();
-        AtomicInteger count = new AtomicInteger(0);
         activeSourceEvents.parallelStream().forEach(sourceEvent -> {
             sourceEvent.peekCurrent(currentTime).parallelStream().forEach(spawnedEvent -> {
                 if (Controls.matchAlsoState) {
                     for (SimpleState state : spawnedEvent.states) {
-                        count.incrementAndGet();
                         addMatch(matches, new MatchingLengthAndStateSpawnedEvents(
                                 spawnedEvent.p, spawnedEvent.length, state), sourceEvent, spawnedEvent);
                     }
                 } else {
-                    count.incrementAndGet();
                     addMatch(matches, new MatchingOnlyLengthSpawnedEvents(
                             spawnedEvent.p, spawnedEvent.length), sourceEvent, spawnedEvent);
                 }
             });
         });
-        int deltaMatchSet = count.get() - matches.size();
-        System.out.printf("%d : %,d %,d\n", currentTime, deltaMatchSet, count.get());
+        if (Controls.info) {
+            System.out.printf("%d : %,d\n", currentTime, matches.size());
+        }
         AtomicInteger[] perSourceCount = new AtomicInteger[5];
         for (int i = 0; i < perSourceCount.length; i++) {
             perSourceCount[i] = new AtomicInteger(0);
@@ -80,37 +93,50 @@ public class JUniverse {
                     return size >= 3;
                 }).forEach(match -> {
             Set<SourceEvent> sourcesInvolved = match.getSourcesInvolved();
-                    int nbSources = sourcesInvolved.size();
-                    System.out.printf("Found %,d sources involved for %s\n", nbSources, match.getPoint().toString());
-                    if (nbSources > 4) {
-                        throw new IllegalStateException("Not supported yet");
-                    } else if (nbSources == 4) {
-                        System.out.printf("Found %,d sources involved for %s\n", nbSources, match.getPoint().toString());
-                        Set<Set<SourceEvent>> setOfSets = CollectionUtils.extractSubSets(sourcesInvolved, 3);
-                        for (Set<SourceEvent> set : setOfSets) {
-                            matchPerSourceCollection.putIfAbsent(set, new HashSet<>(1));
-                            matchPerSourceCollection.get(sourcesInvolved).add(match);
-                        }
-                    } else {
-                        matchPerSourceCollection.putIfAbsent(sourcesInvolved, new HashSet<>(1));
-                        matchPerSourceCollection.get(sourcesInvolved).add(match);
-                    }
-                });
-        if (!matchPerSourceCollection.isEmpty()) {
+            int nbSources = sourcesInvolved.size();
+            if (Controls.debug) {
+                System.out.printf("Found %,d sources involved for %s\n", nbSources, match.getPoint().toString());
+            }
+            if (nbSources > 4) {
+                throw new IllegalStateException("Not supported yet");
+            } else if (nbSources == 4) {
+                System.out.printf("Found %,d sources involved for %s\n", nbSources, match.getPoint().toString());
+                Set<Set<SourceEvent>> setOfSets = CollectionUtils.extractSubSets(sourcesInvolved, 3);
+                for (Set<SourceEvent> set : setOfSets) {
+                    matchPerSourceCollection.putIfAbsent(set, new HashSet<>(1));
+                    matchPerSourceCollection.get(sourcesInvolved).add(match);
+                }
+            } else {
+                matchPerSourceCollection.putIfAbsent(sourcesInvolved, new HashSet<>(1));
+                matchPerSourceCollection.get(sourcesInvolved).add(match);
+            }
+        });
+        if (perSourceCount[2].get() > 0) {
+            StringBuilder msg = new StringBuilder();
+            msg.append(currentTime);
+            for (int i = 2; i < perSourceCount.length; i++) {
+                int c = perSourceCount[i].get();
+                if (c > 0) {
+                    msg.append(MessageFormat.format("\t{0}", c));
+                }
+            }
+            msg.append("\n");
+            System.out.print(msg.toString());
+        }
+        if (Controls.info && !matchPerSourceCollection.isEmpty()) {
             System.out.printf("Found %,d match per source\n", matchPerSourceCollection.size());
             for (Map.Entry<Set<SourceEvent>, Set<MatchingSpawnedEvents>> setSetEntry : matchPerSourceCollection.entrySet()) {
                 System.out.printf("\t%s : %,d\n", setSetEntry.getKey(), setSetEntry.getValue().size());
             }
-        } else {
-            for (int i = 2; i < perSourceCount.length; i++) {
-                int c = perSourceCount[i].get();
-                if (c > 0) {
-                    System.out.printf("\t%d %,d\n", i, c);
-                }
-            }
         }
         if (matchPerSourceCollection.size() >= 4) {
-            System.out.println("We found 4!\n");
+            System.out.println("We found 4 at " + currentTime + "\n");
+            for (Map.Entry<Set<SourceEvent>, Set<MatchingSpawnedEvents>> setSetEntry : matchPerSourceCollection.entrySet()) {
+                System.out.printf("\t%s :\n", setSetEntry.getKey());
+                setSetEntry.getValue().forEach(mse -> {
+                    System.out.printf("\t\t%s\n", mse.getPoint());
+                });
+            }
             stop = true;
         }
     }
@@ -121,7 +147,7 @@ public class JUniverse {
         matches.get(match).add(sourceEvent, spawnedEvent);
     }
 
-    void addOriginalEvent(Point p, SimpleState s) {
-        activeSourceEvents.add(new SourceEvent(currentTime, p, s));
+    void addOriginalEvent(Point p, SimpleState from, SimpleState s) {
+        activeSourceEvents.add(new SourceEvent(currentTime, p, from, s));
     }
 }

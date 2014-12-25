@@ -2,6 +2,9 @@ package org.freddy33.qsm.vs
 
 import groovyx.gpars.GParsPool
 
+import static org.freddy33.qsm.vs.SimpleState.S1
+import static org.freddy33.qsm.vs.SimpleState.S24
+
 class Universe {
     static boolean debug = true
     static boolean stop = false
@@ -16,10 +19,10 @@ class Universe {
         def nt = System.nanoTime()
         def uni = new Universe()
         def trSize = 42
-        uni.addOriginalEvent(new Point(0, 0, 0), SimpleState.S1)
-        uni.addOriginalEvent(new Point(0, -trSize, (int) (1.732 * trSize)), SimpleState.S1)
-        uni.addOriginalEvent(new Point(0, -trSize, -(int) (1.732 * trSize)), SimpleState.S1)
-        uni.addOriginalEvent(new Point(0, 2 * trSize, 0), SimpleState.S1)
+        uni.addOriginalEvent(new Point(0, 0, 0), S24, S1)
+        uni.addOriginalEvent(new Point(0, -trSize, (int) (1.732 * trSize)), S24, S1)
+        uni.addOriginalEvent(new Point(0, -trSize, -(int) (1.732 * trSize)), S24, S1)
+        uni.addOriginalEvent(new Point(0, 2 * trSize, 0), S24, S1)
         println uni.activeSourceEvents.size()
         for (int i = 0; i < 400; i++) {
             uni.calcNext(uni.findNewEvents())
@@ -79,7 +82,7 @@ class Universe {
             println "Found more than 3 good match at $currentTime"
             // Order by increasing size to start computing with small matching event sets
             goodMatches = goodMatches.sort { it.value.spawnedEventsPerSourceSet.size() }
-            goodMatches.each { SourceEvent k, MatchingEventsForSource v ->                
+            goodMatches.each { SourceEvent k, MatchingEventsForSource v ->
                 if (debug) {
                     println "For $k found ${v.spawnedEventsPerSourceSet.size()} source sets"
                     v.spawnedEventsPerSourceSet.each { Set<SourceEvent> ses, Set<MatchingLengthAndStateSpawnedEvents> mse ->
@@ -87,10 +90,10 @@ class Universe {
                     }
                 }
                 // Trying to create 3 matching spawned event out of 3 other source event
-                
+
 
             }
-            
+
             stop = true
         }
         return activeSpawnedEvents
@@ -112,8 +115,8 @@ class Universe {
      * @param p
      * @param s
      */
-    void addOriginalEvent(Point p, SimpleState s) {
-        activeSourceEvents.add(new SourceEvent(currentTime, p, s))
+    void addOriginalEvent(Point p, SimpleState from, SimpleState s) {
+        activeSourceEvents.add(new SourceEvent(currentTime, p, from, s))
     }
 
 }

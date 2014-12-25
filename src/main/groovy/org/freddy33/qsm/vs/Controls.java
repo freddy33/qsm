@@ -8,11 +8,16 @@ enum NextSpawnedMode {
     moveAndSplit, splitAndMove
 }
 
+enum NextStateMode {
+    random, sequential, incoming
+}
+
 public abstract class Controls {
+    static boolean info = false;
     static boolean debug = false;
-    static boolean useRandom = true;
     static boolean blockCurrentlyUsed = false;
-    static NextSpawnedMode nextMode = NextSpawnedMode.splitAndMove;
+    static NextStateMode nextStateMode = NextStateMode.incoming;
+    static NextSpawnedMode moveMode = NextSpawnedMode.splitAndMove;
     static boolean matchAlsoState = false;
 
     // Random ratios

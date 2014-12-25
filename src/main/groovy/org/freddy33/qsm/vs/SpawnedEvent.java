@@ -9,13 +9,13 @@ import java.util.EnumSet;
 public class SpawnedEvent {
     final Point p;
     final int length;
-    final int counter;
+    final SimpleState from;
     final EnumSet<SimpleState> states;
 
-    public SpawnedEvent(Point p, int length, int counter, SimpleState... s) {
+    public SpawnedEvent(Point p, int length, SimpleState from, SimpleState... s) {
         this.p = p;
         this.length = length;
-        this.counter = counter;
+        this.from = from;
         if (s.length == 1) {
             this.states = EnumSet.of(s[0]);
         } else {
@@ -31,9 +31,9 @@ public class SpawnedEvent {
 
     @Override
     public String toString() {
-        return "SpawnedEvent{" +
-                ", p=" + p +
-                ", length=" + length +
+        return "SpawnedEvent{" + p +
+                ", l=" + length +
+                ", from=" + from.name() +
                 ", states=" + states +
                 '}';
     }
@@ -46,6 +46,7 @@ public class SpawnedEvent {
         SpawnedEvent that = (SpawnedEvent) o;
 
         if (length != that.length) return false;
+        if (from != that.from) return false;
         if (!p.equals(that.p)) return false;
 
         return true;
@@ -55,6 +56,7 @@ public class SpawnedEvent {
     public int hashCode() {
         int result = p.hashCode();
         result = 31 * result + length;
+        result = 31 * result + from.hashCode();
         return result;
     }
 }

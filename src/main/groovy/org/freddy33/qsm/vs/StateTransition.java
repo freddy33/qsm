@@ -113,6 +113,9 @@ public enum StateTransition {
     }
 
     static void verifyAll() {
+        if (!transitions.isEmpty()) {
+            return;
+        }
         for (StateTransition str : values()) {
             List<StateTransition> fromTrans = transitions.get(str.from);
             if (fromTrans == null) {

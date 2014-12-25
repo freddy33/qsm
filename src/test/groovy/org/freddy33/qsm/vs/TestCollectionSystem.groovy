@@ -14,10 +14,10 @@ class TestCollectionSystem {
     @Test
     public void testSubSets() {
         def events = new HashSet<SourceEvent>(4);
-        def so1 = new SourceEvent(0, origin, S10)
-        def so2 = new SourceEvent(0, origin.add(S1), S10)
-        def so3 = new SourceEvent(0, origin.add(S15), S10)
-        def so4 = new SourceEvent(0, origin.add(S22), S10)
+        def so1 = new SourceEvent(0, origin, S1, S10)
+        def so2 = new SourceEvent(0, origin.add(S1), S1, S10)
+        def so3 = new SourceEvent(0, origin.add(S15), S1, S10)
+        def so4 = new SourceEvent(0, origin.add(S22), S1, S10)
         events << so1 << so2 << so3 << so4
         def sets = CollectionUtils.extractSubSets(events, 3)
         Assert.assertEquals(4, sets.size())

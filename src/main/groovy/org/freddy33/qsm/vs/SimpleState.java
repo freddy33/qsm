@@ -57,8 +57,7 @@ public enum SimpleState {
         }
     }
 
-    @Override
-    public String toString() {
+    public String fullString() {
         return name() +
                 "{x=" + x +
                 ", y=" + y +

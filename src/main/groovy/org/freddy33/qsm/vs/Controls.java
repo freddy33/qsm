@@ -15,6 +15,8 @@ enum NextStateMode {
 public abstract class Controls {
     static boolean info = false;
     static boolean debug = false;
+    static boolean numbersOutput = false;
+
     static boolean blockCurrentlyUsed = false;
     static NextStateMode nextStateMode = NextStateMode.incoming;
     static NextSpawnedMode moveMode = NextSpawnedMode.splitAndMove;

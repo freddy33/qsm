@@ -71,21 +71,17 @@ public class SourceEvent {
     }
 
     void calcNext(SpawnedEvent se) {
-        int i = 1;
         for (SimpleState s : se.states) {
             SimpleState[] nextStates = nextStates(se, s);
             if (Controls.moveMode == NextSpawnedMode.moveAndSplit) {
                 spawnNewEvent(se.p.add(s), se.length + s.stateGroup.delta, s, nextStates);
             } else if (Controls.moveMode == NextSpawnedMode.splitAndMove) {
-                int j = 0;
                 for (SimpleState nextState : nextStates) {
                     spawnNewEvent(se.p.add(nextState), se.length + nextState.stateGroup.delta, s, nextState);
-                    j++;
                 }
             } else {
                 throw new IllegalStateException("Next mode " + Controls.moveMode + " not supported!");
             }
-            i++;
         }
     }
 
@@ -95,7 +91,7 @@ public class SourceEvent {
             SpawnedEvent newSe = new SpawnedEvent(np, length, from, ns);
             SpawnedEvent existingSe = currentPerTime.get(time + length).putIfAbsent(newSe, newSe);
             if (existingSe != null) {
-                existingSe.add(ns);
+                existingSe.addStates(ns);
                 return existingSe;
             } else {
                 return newSe;
@@ -205,6 +201,7 @@ public class SourceEvent {
         return "se_id=" + id;
     }
 
+    @SuppressWarnings("UnusedDeclaration")
     public String fullString() {
         return "SourceEvent{" +
                 "id=" + id +

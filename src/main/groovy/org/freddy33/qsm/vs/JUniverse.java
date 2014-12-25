@@ -51,9 +51,8 @@ public class JUniverse {
     }
 
     private void calcNext() {
-        activeSourceEvents.parallelStream().forEach(sourceEvent -> {
-            sourceEvent.pollCurrent(currentTime).parallelStream().forEach(sourceEvent::calcNext);
-        });
+        activeSourceEvents.parallelStream().forEach(sourceEvent ->
+                sourceEvent.pollCurrent(currentTime).parallelStream().forEach(sourceEvent::calcNext));
         currentTime++;
     }
 
@@ -65,19 +64,18 @@ public class JUniverse {
             }
         }
         Map<MatchingSpawnedEvents, MatchingSpawnedEvents> matches = new ConcurrentHashMap<>();
-        activeSourceEvents.parallelStream().forEach(sourceEvent -> {
-            sourceEvent.peekCurrent(currentTime).parallelStream().forEach(spawnedEvent -> {
-                if (Controls.matchAlsoState) {
-                    for (SimpleState state : spawnedEvent.states) {
-                        addMatch(matches, new MatchingLengthAndStateSpawnedEvents(
-                                spawnedEvent.p, spawnedEvent.length, state), sourceEvent, spawnedEvent);
+        activeSourceEvents.parallelStream().forEach(sourceEvent ->
+                sourceEvent.peekCurrent(currentTime).parallelStream().forEach(spawnedEvent -> {
+                    if (Controls.matchAlsoState) {
+                        for (SimpleState state : spawnedEvent.states) {
+                            addMatch(matches, new MatchingLengthAndStateSpawnedEvents(
+                                    spawnedEvent.p, spawnedEvent.length, state), sourceEvent, spawnedEvent);
+                        }
+                    } else {
+                        addMatch(matches, new MatchingOnlyLengthSpawnedEvents(
+                                spawnedEvent.p, spawnedEvent.length), sourceEvent, spawnedEvent);
                     }
-                } else {
-                    addMatch(matches, new MatchingOnlyLengthSpawnedEvents(
-                            spawnedEvent.p, spawnedEvent.length), sourceEvent, spawnedEvent);
-                }
-            });
-        });
+                }));
         if (Controls.info) {
             System.out.printf("%d : %,d\n", currentTime, matches.size());
         }
@@ -88,9 +86,13 @@ public class JUniverse {
         Map<Set<SourceEvent>, Set<MatchingSpawnedEvents>> matchPerSourceCollection = new ConcurrentHashMap<>();
         matches.keySet().parallelStream()
                 .filter(match -> {
-                    int size = match.getSourcesInvolved().size();
-                    perSourceCount[size].incrementAndGet();
-                    return size >= 3;
+                    if (Controls.numbersOutput) {
+                        int size = match.getSourcesInvolved().size();
+                        perSourceCount[size].incrementAndGet();
+                        return size >= 3;
+                    } else {
+                        return match.isValid();
+                    }
                 }).forEach(match -> {
             Set<SourceEvent> sourcesInvolved = match.getSourcesInvolved();
             int nbSources = sourcesInvolved.size();
@@ -111,7 +113,7 @@ public class JUniverse {
                 matchPerSourceCollection.get(sourcesInvolved).add(match);
             }
         });
-        if (perSourceCount[2].get() > 0) {
+        if (Controls.numbersOutput && perSourceCount[2].get() > 0) {
             StringBuilder msg = new StringBuilder();
             msg.append(currentTime);
             for (int i = 2; i < perSourceCount.length; i++) {

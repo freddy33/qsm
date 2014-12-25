@@ -23,7 +23,7 @@ public class SpawnedEvent {
         }
     }
 
-    void add(SimpleState... newStates) {
+    void addStates(SimpleState... newStates) {
         synchronized (this.states) {
             Collections.addAll(this.states, newStates);
         }

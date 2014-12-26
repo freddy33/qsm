@@ -25,6 +25,11 @@ class SpawnedEventStateIncoming implements SpawnedEventState {
     }
 
     @Override
+    public EnumSet<SimpleState> getStates() {
+        return EnumSet.of(transition.next[0], transition.next);
+    }
+
+    @Override
     public String toString() {
         return "SpawnedEventStateIncoming{" +
                 "transition=" + transition +
@@ -112,19 +117,21 @@ public class NextStateSelectorIncoming implements NextStateSelector {
         if (possibleTransitions.size() == 1) {
             return possibleTransitions.iterator().next();
         }
-        // Apply rule 2
-        if (se.parentTransition.from == s) {
-            return se.parentTransition;
-        }
-        // For all possibles transition if one goes back to grandparent or transition to grandparent
-        // choose it (there can be only one :)
-        for (StateTransition possibleTransition : possibleTransitions) {
-            for (SimpleState nextState : possibleTransition.next) {
-                if (nextState != se.transition.from &&
-                        (nextState == se.parentTransition.from ||
-                                possiblesNextStates.get(nextState)
-                                        .contains(se.parentTransition.from))) {
-                    return possibleTransition;
+        // Apply rule 2 works only with a grandparent transition
+        if (se.parentTransition != null) {
+            if (se.parentTransition.from == s) {
+                return se.parentTransition;
+            }
+            // For all possibles transition if one goes back to grandparent or transition to grandparent
+            // choose it (there can be only one :)
+            for (StateTransition possibleTransition : possibleTransitions) {
+                for (SimpleState nextState : possibleTransition.next) {
+                    if (nextState != se.transition.from &&
+                            (nextState == se.parentTransition.from ||
+                                    possiblesNextStates.get(nextState)
+                                            .contains(se.parentTransition.from))) {
+                        return possibleTransition;
+                    }
                 }
             }
         }

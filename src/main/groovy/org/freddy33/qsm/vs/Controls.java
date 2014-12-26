@@ -18,7 +18,7 @@ public abstract class Controls {
     static boolean numbersOutput = true;
 
     static boolean blockCurrentlyUsed = false;
-    static NextStateMode nextStateMode = NextStateMode.incoming;
+    static NextStateMode nextStateMode = NextStateMode.random;
     static NextSpawnedMode moveMode = NextSpawnedMode.splitAndMove;
     static boolean matchAlsoState = false;
 }

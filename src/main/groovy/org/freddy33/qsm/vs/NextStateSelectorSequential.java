@@ -30,6 +30,11 @@ class SpawnedEventStateSequential implements SpawnedEventState {
     }
 
     @Override
+    public EnumSet<SimpleState> getStates() {
+        return states;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;

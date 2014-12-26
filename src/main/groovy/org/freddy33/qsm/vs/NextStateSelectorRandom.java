@@ -19,7 +19,7 @@ class SpawnedEventStateRandom implements SpawnedEventState {
 
     @Override
     public synchronized void add(SpawnedEventState newStates) {
-        this.states.addAll(((SpawnedEventStateSequential) newStates).states);
+        this.states.addAll(((SpawnedEventStateRandom) newStates).states);
     }
 
     @Override
@@ -28,11 +28,16 @@ class SpawnedEventStateRandom implements SpawnedEventState {
     }
 
     @Override
+    public EnumSet<SimpleState> getStates() {
+        return states;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        SpawnedEventStateSequential that = (SpawnedEventStateSequential) o;
+        SpawnedEventStateRandom that = (SpawnedEventStateRandom) o;
 
         if (from != that.from) return false;
 

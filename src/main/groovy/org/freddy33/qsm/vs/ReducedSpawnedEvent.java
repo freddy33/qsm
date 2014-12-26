@@ -11,6 +11,6 @@ public class ReducedSpawnedEvent {
 
     public ReducedSpawnedEvent(SpawnedEvent se) {
         this.length = se.length;
-        this.states = se.states;
+        this.states = se.stateHolder.getStates();
     }
 }

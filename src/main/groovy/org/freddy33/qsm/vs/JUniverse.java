@@ -7,7 +7,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.freddy33.qsm.vs.SimpleState.*;
+import static org.freddy33.qsm.vs.StateTransition.*;
 
 /**
  * @author freds on 12/16/14.
@@ -44,10 +44,10 @@ public class JUniverse {
     }
 
     private void init() {
-        addOriginalEvent(new Point(0, 0, 0), S24, S1);
-        addOriginalEvent(new Point(0, -TRIANGLE_HALF_SIDE, (int) (1.732 * TRIANGLE_HALF_SIDE)), S22, S1);
-        addOriginalEvent(new Point(0, -TRIANGLE_HALF_SIDE, -(int) (1.732 * TRIANGLE_HALF_SIDE)), S19, S1);
-        addOriginalEvent(new Point(0, 2 * TRIANGLE_HALF_SIDE, 0), S21, S1);
+        addOriginalEvent(new Point(0, 0, 0), S1_1);
+        addOriginalEvent(new Point(0, -TRIANGLE_HALF_SIDE, (int) (1.732 * TRIANGLE_HALF_SIDE)), S1_2);
+        addOriginalEvent(new Point(0, -TRIANGLE_HALF_SIDE, -(int) (1.732 * TRIANGLE_HALF_SIDE)), S1_3);
+        addOriginalEvent(new Point(0, 2 * TRIANGLE_HALF_SIDE, 0), S1_4);
     }
 
     private void calcNext() {
@@ -67,10 +67,9 @@ public class JUniverse {
         activeSourceEvents.parallelStream().forEach(sourceEvent ->
                 sourceEvent.peekCurrent(currentTime).parallelStream().forEach(spawnedEvent -> {
                     if (Controls.matchAlsoState) {
-                        for (SimpleState state : spawnedEvent.states) {
-                            addMatch(matches, new MatchingLengthAndStateSpawnedEvents(
-                                    spawnedEvent.p, spawnedEvent.length, state), sourceEvent, spawnedEvent);
-                        }
+                        addMatch(matches, new MatchingLengthAndStateSpawnedEvents(
+                                spawnedEvent.p, spawnedEvent.length, spawnedEvent.stateHolder.getSimpleState()),
+                                sourceEvent, spawnedEvent);
                     } else {
                         addMatch(matches, new MatchingOnlyLengthSpawnedEvents(
                                 spawnedEvent.p, spawnedEvent.length), sourceEvent, spawnedEvent);
@@ -149,7 +148,7 @@ public class JUniverse {
         matches.get(match).add(sourceEvent, spawnedEvent);
     }
 
-    void addOriginalEvent(Point p, SimpleState from, SimpleState s) {
-        activeSourceEvents.add(new SourceEvent(currentTime, p, from, s));
+    void addOriginalEvent(Point p, StateTransition originalState) {
+        activeSourceEvents.add(new SourceEvent(currentTime, p, originalState));
     }
 }

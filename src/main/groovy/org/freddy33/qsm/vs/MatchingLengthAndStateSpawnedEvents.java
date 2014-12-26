@@ -13,7 +13,7 @@ public class MatchingLengthAndStateSpawnedEvents extends BaseMatchingSpawnedEven
 
     @Override
     public void add(SourceEvent sourceEvent, SpawnedEvent se) {
-        if (!se.states.contains(state)) {
+        if (!se.stateHolder.getStates().contains(state)) {
             throw new IllegalArgumentException("Spawned Event " + se + " does not contain state " + state);
         }
         super.add(sourceEvent, se);

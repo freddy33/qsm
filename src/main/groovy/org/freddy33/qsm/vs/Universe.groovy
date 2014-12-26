@@ -2,8 +2,7 @@ package org.freddy33.qsm.vs
 
 import groovyx.gpars.GParsPool
 
-import static org.freddy33.qsm.vs.SimpleState.S1
-import static org.freddy33.qsm.vs.SimpleState.S24
+import static org.freddy33.qsm.vs.StateTransition.*
 
 class Universe {
     static boolean debug = true
@@ -12,17 +11,17 @@ class Universe {
     Set<SourceEvent> activeSourceEvents = new HashSet<>()
 
     static {
-        StateTransition.verifyAll()
+        verifyAll()
     }
 
     public static void main(String[] args) {
         def nt = System.nanoTime()
         def uni = new Universe()
         def trSize = 42
-        uni.addOriginalEvent(new Point(0, 0, 0), S24, S1)
-        uni.addOriginalEvent(new Point(0, -trSize, (int) (1.732 * trSize)), S24, S1)
-        uni.addOriginalEvent(new Point(0, -trSize, -(int) (1.732 * trSize)), S24, S1)
-        uni.addOriginalEvent(new Point(0, 2 * trSize, 0), S24, S1)
+        uni.addOriginalEvent(new Point(0, 0, 0), S1_1)
+        uni.addOriginalEvent(new Point(0, -trSize, (int) (1.732 * trSize)), S1_2)
+        uni.addOriginalEvent(new Point(0, -trSize, -(int) (1.732 * trSize)), S1_3)
+        uni.addOriginalEvent(new Point(0, 2 * trSize, 0), S1_4)
         println uni.activeSourceEvents.size()
         for (int i = 0; i < 400; i++) {
             uni.calcNext(uni.findNewEvents())
@@ -115,8 +114,8 @@ class Universe {
      * @param p
      * @param s
      */
-    void addOriginalEvent(Point p, SimpleState from, SimpleState s) {
-        activeSourceEvents.add(new SourceEvent(currentTime, p, from, s))
+    void addOriginalEvent(Point p, StateTransition s) {
+        activeSourceEvents.add(new SourceEvent(currentTime, p, s))
     }
 
 }

@@ -38,7 +38,7 @@ public class SourceEvent {
                 this.nextStateSelector = new NextStateSelectorSequential(originalState.from);
                 break;
             case incoming:
-                this.nextStateSelector = new NextStateSelectorIncoming();
+                this.nextStateSelector = new NextStateSelectorIncoming(originalState.from);
                 break;
             default:
                 throw new IllegalStateException("Next state mode " + Controls.nextStateMode + " not supported!");

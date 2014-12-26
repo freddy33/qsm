@@ -1,40 +1,28 @@
 package org.freddy33.qsm.vs;
 
-import java.util.Collections;
-import java.util.EnumSet;
-
 /**
  * @author freds on 12/8/14.
  */
 public class SpawnedEvent {
     final Point p;
     final int length;
-    final SimpleState from;
-    final EnumSet<SimpleState> states;
+    final SpawnedEventState stateHolder;
 
-    public SpawnedEvent(Point p, int length, SimpleState from, SimpleState... s) {
+    public SpawnedEvent(Point p, int length, SpawnedEventState stateHolder) {
         this.p = p;
         this.length = length;
-        this.from = from;
-        if (s.length == 1) {
-            this.states = EnumSet.of(s[0]);
-        } else {
-            this.states = EnumSet.of(s[0], s);
-        }
+        this.stateHolder = stateHolder;
     }
 
-    void addStates(SimpleState... newStates) {
-        synchronized (this.states) {
-            Collections.addAll(this.states, newStates);
-        }
+    void addStates(SpawnedEventState newStates) {
+        this.stateHolder.add(newStates);
     }
 
     @Override
     public String toString() {
         return "SpawnedEvent{" + p +
                 ", l=" + length +
-                ", from=" + from.name() +
-                ", states=" + states +
+                ", states=" + stateHolder +
                 '}';
     }
 
@@ -46,8 +34,8 @@ public class SpawnedEvent {
         SpawnedEvent that = (SpawnedEvent) o;
 
         if (length != that.length) return false;
-        if (from != that.from) return false;
         if (!p.equals(that.p)) return false;
+        if (!stateHolder.equals(that.stateHolder)) return false;
 
         return true;
     }
@@ -56,7 +44,7 @@ public class SpawnedEvent {
     public int hashCode() {
         int result = p.hashCode();
         result = 31 * result + length;
-        result = 31 * result + from.hashCode();
+        result = 31 * result + stateHolder.hashCode();
         return result;
     }
 }

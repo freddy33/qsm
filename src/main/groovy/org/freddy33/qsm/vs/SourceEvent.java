@@ -1,6 +1,9 @@
 package org.freddy33.qsm.vs;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -13,31 +16,37 @@ public class SourceEvent {
     final int id;
     final int time;
     final Point origin;
-    final SimpleState state;
+    final StateTransition originalState;
+    final NextStateSelector nextStateSelector;
+
     final Map<Point, ReducedSpawnedEvent> used = new HashMap<>();
-    final Random random;
-    final TransitionRatio transitionRatio;
     // All the point present in currentPerTime after polling the active ones
     Map<Point, Point> currentlyUsed = new ConcurrentHashMap<>();
     // Per time slice list of spawned events
     Map<Integer, Map<SpawnedEvent, SpawnedEvent>> currentPerTime = new HashMap<>();
 
-    public SourceEvent(int time, Point origin, SimpleState from, SimpleState state) {
+    public SourceEvent(int time, Point origin, StateTransition originalState) {
         this.id = counter.getAndIncrement();
         this.time = time;
         this.origin = origin;
-        this.state = state;
-        SpawnedEvent se = new SpawnedEvent(origin, 0, from, state);
+        this.originalState = originalState;
+        switch (Controls.nextStateMode) {
+            case random:
+                this.nextStateSelector = new NextStateSelectorRandom(originalState.from, id + time + origin.hashCode());
+                break;
+            case sequential:
+                this.nextStateSelector = new NextStateSelectorSequential(originalState.from);
+                break;
+            case incoming:
+                this.nextStateSelector = new NextStateSelectorIncoming();
+                break;
+            default:
+                throw new IllegalStateException("Next state mode " + Controls.nextStateMode + " not supported!");
+        }
+        SpawnedEvent se = new SpawnedEvent(origin, 0, this.nextStateSelector.createOriginalState(originalState));
         Map<SpawnedEvent, SpawnedEvent> currentSpawned = new HashMap<>(1);
         this.currentPerTime.put(time, currentSpawned);
         currentSpawned.put(se, se);
-        if (Controls.nextStateMode == NextStateMode.random) {
-            this.random = new Random(id + time + origin.hashCode());
-            this.transitionRatio = Controls.defaultRatio;
-        } else {
-            this.random = null;
-            this.transitionRatio = null;
-        }
     }
 
     public Set<SpawnedEvent> peekCurrent(int currentTime) {
@@ -71,112 +80,37 @@ public class SourceEvent {
     }
 
     void calcNext(SpawnedEvent se) {
-        for (SimpleState s : se.states) {
-            SimpleState[] nextStates = nextStates(se, s);
-            if (Controls.moveMode == NextSpawnedMode.moveAndSplit) {
-                spawnNewEvent(se.p.add(s), se.length + s.stateGroup.delta, s, nextStates);
-            } else if (Controls.moveMode == NextSpawnedMode.splitAndMove) {
-                for (SimpleState nextState : nextStates) {
-                    spawnNewEvent(se.p.add(nextState), se.length + nextState.stateGroup.delta, s, nextState);
+        List<SpawnedEventState> spawnedEventStates = this.nextStateSelector.nextSpawnedEvent(se);
+        if (Controls.moveMode == NextSpawnedMode.moveAndSplit) {
+            SimpleState origSimpleState = se.stateHolder.getSimpleState();
+            SpawnedEventState first = spawnedEventStates.get(0);
+            if (spawnedEventStates.size() > 1) {
+                for (SpawnedEventState state : spawnedEventStates) {
+                    first.add(state);
                 }
-            } else {
-                throw new IllegalStateException("Next mode " + Controls.moveMode + " not supported!");
+            }
+            spawnNewEvent(se.p.add(origSimpleState), se.length + origSimpleState.stateGroup.delta, first);
+        } else {
+            for (SpawnedEventState spawnedEventState : spawnedEventStates) {
+                SimpleState nextState = spawnedEventState.getSimpleState();
+                spawnNewEvent(se.p.add(nextState), se.length + nextState.stateGroup.delta, spawnedEventState);
             }
         }
     }
 
-    private SpawnedEvent spawnNewEvent(Point np, int length, SimpleState from, SimpleState... ns) {
+    private SpawnedEvent spawnNewEvent(Point np, int length, SpawnedEventState state) {
         // If the next point was never used continue
         if ((!Controls.blockCurrentlyUsed || !currentlyUsed.containsKey(np)) && !used.containsKey(np)) {
-            SpawnedEvent newSe = new SpawnedEvent(np, length, from, ns);
+            SpawnedEvent newSe = new SpawnedEvent(np, length, state);
             SpawnedEvent existingSe = currentPerTime.get(time + length).putIfAbsent(newSe, newSe);
             if (existingSe != null) {
-                existingSe.addStates(ns);
+                existingSe.addStates(state);
                 return existingSe;
             } else {
                 return newSe;
             }
         }
         return null;
-    }
-
-    SimpleState[] nextStates(SpawnedEvent se, SimpleState s) {
-        switch (Controls.nextStateMode) {
-            case random:
-                return nextStatesRandom(s);
-            case sequential:
-                return nextStatesSequential(se, s);
-            case incoming:
-                return nextStatesFromIncoming(se, s);
-        }
-        throw new IllegalStateException("Next state mode " + Controls.nextStateMode + " not supported");
-    }
-
-    SimpleState[] nextStatesFromIncoming(SpawnedEvent se, SimpleState s) {
-        List<StateTransition> possibles = StateTransition.transitions.get(s);
-        for (StateTransition possible : possibles) {
-            for (SimpleState simpleState : possible.next) {
-                if (simpleState == se.from) {
-                    return possible.next;
-                }
-            }
-        }
-        System.err.println("Something fishy about " + se + " transition for " + s);
-        return nextStatesSequential(se, s);
-    }
-
-    SimpleState[] nextStatesSequential(SpawnedEvent se, SimpleState s) {
-        int abs = se.length;
-        int left;
-        int transitionSelect;
-        if (Controls.sequence.length > 1) {
-            left = abs % Controls.sequence.length;
-            transitionSelect = (abs - left) / Controls.sequence.length;
-        } else {
-            left = 0;
-            transitionSelect = abs;
-        }
-        TransitionMode transitionMode = Controls.sequence[left];
-        return getNextSimpleStates(s, transitionMode, transitionSelect);
-    }
-
-    SimpleState[] nextStatesRandom(SimpleState s) {
-        // Blocks in order of TransitionMode
-        int modeSelect = random.nextInt(transitionRatio.total());
-        TransitionMode mode = null;
-        int i = 0;
-        for (TransitionMode transitionMode : TransitionMode.values()) {
-            int ratio = transitionRatio.mapRatio.get(transitionMode);
-            if (modeSelect >= i && modeSelect < (i + ratio)) {
-                mode = transitionMode;
-                break;
-            }
-            i += ratio;
-        }
-        if (mode == null) {
-            throw new IllegalStateException("Did not find a mode using " + modeSelect + " from " + transitionRatio.mapRatio);
-        }
-        return getNextSimpleStates(s, mode, random.nextInt(4));
-    }
-
-    private SimpleState[] getNextSimpleStates(SimpleState s, TransitionMode transitionMode, int transitionSelect) {
-        switch (transitionMode) {
-            case transitionFromOriginal: {
-                // Always pick transitions from original state
-                List<StateTransition> possibles = StateTransition.transitions.get(state);
-                return possibles.get(transitionSelect % possibles.size()).next;
-            }
-            case transitionFromIncoming: {
-                // Pick transitions from incoming state
-                List<StateTransition> possibles = StateTransition.transitions.get(s);
-                return possibles.get(transitionSelect % possibles.size()).next;
-            }
-            case incomingContinue:
-                return new SimpleState[]{s};
-            case backToOriginal:
-                return new SimpleState[]{state};
-        }
-        throw new IllegalStateException("Modulo " + Arrays.toString(TransitionMode.values()) + " should return");
     }
 
     @Override
@@ -207,7 +141,7 @@ public class SourceEvent {
                 "id=" + id +
                 ", time=" + time +
                 ", origin=" + origin +
-                ", state=" + state +
+                ", state=" + originalState +
                 '}';
     }
 

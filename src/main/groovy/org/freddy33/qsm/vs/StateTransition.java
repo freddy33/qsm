@@ -137,6 +137,7 @@ public enum StateTransition {
                 }
             }
         }
+        NextStateSelectorIncoming.verifyAll();
     }
 
     private void checkStates(SimpleStateGroup[] states) {
@@ -216,8 +217,8 @@ public enum StateTransition {
         }
     }
 
-    @Override
-    public String toString() {
+    @SuppressWarnings("UnusedDeclaration")
+    public String fullString() {
         return name() +
                 "{from=" + from +
                 ", next=" + Arrays.toString(next) +

@@ -15,20 +15,10 @@ enum NextStateMode {
 public abstract class Controls {
     static boolean info = false;
     static boolean debug = false;
-    static boolean numbersOutput = false;
+    static boolean numbersOutput = true;
 
     static boolean blockCurrentlyUsed = false;
     static NextStateMode nextStateMode = NextStateMode.incoming;
     static NextSpawnedMode moveMode = NextSpawnedMode.splitAndMove;
     static boolean matchAlsoState = false;
-
-    // Random ratios
-    static TransitionRatio defaultRatio = new TransitionRatio(0, 1, 3, 0);
-
-    // Non random sequence
-    static TransitionMode[] sequence = new TransitionMode[]{
-            TransitionMode.transitionFromIncoming,
-            TransitionMode.transitionFromIncoming,
-            TransitionMode.transitionFromOriginal
-    };
 }

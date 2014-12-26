@@ -22,4 +22,22 @@ class TestCollectionSystem {
         def sets = CollectionUtils.extractSubSets(events, 3)
         Assert.assertEquals(4, sets.size())
     }
+
+    @Test
+    public void testPossibleFilter() {
+        int found = 0
+        for (int i = 0; i < 4; i++) {
+            if (i == 0 || i == 3) {
+                found |= 1 << i
+            }
+        }
+        Assert.assertEquals(9, found)
+        found = 0
+        for (int i = 0; i < 4; i++) {
+            if (i != 0) {
+                found |= 1 << i
+            }
+        }
+        Assert.assertEquals(14, found)
+    }
 }

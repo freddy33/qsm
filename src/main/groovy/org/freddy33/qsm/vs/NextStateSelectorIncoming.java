@@ -8,19 +8,19 @@ import java.util.*;
 class SpawnedEventStateIncoming implements SpawnedEventState {
     final StateTransition transition;
     final StateTransition parentTransition;
-    final StateTransition grandParentTransition;
 
     SpawnedEventStateIncoming(StateTransition transition,
-                              StateTransition parentTransition,
-                              StateTransition grandParentTransition) {
+                              StateTransition parentTransition) {
         this.transition = transition;
         this.parentTransition = parentTransition;
-        this.grandParentTransition = grandParentTransition;
     }
 
     @Override
     public synchronized void add(SpawnedEventState newStates) {
         // Nothing all in equals and hash
+        if (Controls.debug) {
+            System.out.println("Why you add to " + this + " " + newStates);
+        }
     }
 
     @Override
@@ -38,7 +38,6 @@ class SpawnedEventStateIncoming implements SpawnedEventState {
         return "SpawnedEventStateIncoming{" +
                 "transition=" + transition +
                 ", parentTransition=" + parentTransition +
-                ", grandParentTransition=" + grandParentTransition +
                 '}';
     }
 
@@ -49,7 +48,6 @@ class SpawnedEventStateIncoming implements SpawnedEventState {
 
         SpawnedEventStateIncoming that = (SpawnedEventStateIncoming) o;
 
-        if (grandParentTransition != that.grandParentTransition) return false;
         if (parentTransition != that.parentTransition) return false;
         if (transition != that.transition) return false;
 
@@ -60,7 +58,6 @@ class SpawnedEventStateIncoming implements SpawnedEventState {
     public int hashCode() {
         int result = transition.hashCode();
         result = 31 * result + (parentTransition != null ? parentTransition.hashCode() : 0);
-        result = 31 * result + (grandParentTransition != null ? grandParentTransition.hashCode() : 0);
         return result;
     }
 }
@@ -84,12 +81,34 @@ public class NextStateSelectorIncoming extends BaseNextStateSelector {
                 }
             }
         }
+        for (Map.Entry<SimpleState, EnumSet<SimpleState>> entry : possiblesNextStates.entrySet()) {
+            switch (entry.getKey().stateGroup) {
+                case ONE:
+                case TWO:
+                    if (entry.getValue().size() != 8) {
+                        throw new IllegalStateException("Possible next state for "
+                                + entry.getKey() + " should be 8 and its " + entry.getValue());
+                    }
+                    break;
+                case THREE:
+                    if (entry.getValue().size() != 6) {
+                        throw new IllegalStateException("Possible next state for "
+                                + entry.getKey() + " should be 6 and its " + entry.getValue());
+                    }
+                    break;
+            }
+
+        }
         for (StateTransition transition : StateTransition.values()) {
             for (SimpleState nextState : transition.next) {
                 SimpleStatePair key = new SimpleStatePair(nextState, transition.from);
                 EnumSet<StateTransition> transitions = transitionsPerPair.get(key);
                 if (transitions != null) {
                     transitions.add(transition);
+                    if (transitions.size() > 2) {
+                        throw new IllegalStateException("There should be only 2 max possibles for a pair " + key
+                                + " and got " + transitions);
+                    }
                 } else {
                     transitionsPerPair.put(key, EnumSet.of(transition));
                 }
@@ -103,14 +122,14 @@ public class NextStateSelectorIncoming extends BaseNextStateSelector {
         List<SpawnedEventState> res = new ArrayList<>(3);
         for (SimpleState state : stateIncoming.transition.next) {
             res.add(new SpawnedEventStateIncoming(findTransition(stateIncoming, state),
-                    stateIncoming.transition, stateIncoming.parentTransition));
+                    stateIncoming.transition));
         }
         return res;
     }
 
     @Override
     public SpawnedEventState createOriginalState(StateTransition transition) {
-        return new SpawnedEventStateIncoming(transition, null, null);
+        return new SpawnedEventStateIncoming(transition, null);
     }
 
     /**
@@ -127,52 +146,97 @@ public class NextStateSelectorIncoming extends BaseNextStateSelector {
         if (possibleTransitions.size() == 1) {
             return possibleTransitions.iterator().next();
         }
-        // Apply rule 2 works only with a parent transition
-        StateTransition result;
-        result = findFromParent(se, s, possibleTransitions, se.transition);
+        // Apply rule 2
+        // If there is a grandparent transition and s == grandparent take it
+        StateTransition result = findFromGrandParent(se, s, possibleTransitions);
         if (result != null) {
             return result;
         }
 
-        if (se.parentTransition != null) {
-            result = findFromParent(se, s, possibleTransitions, se.parentTransition);
-            if (result != null) {
-                return result;
-            }
-        }
-
-        if (se.grandParentTransition != null) {
-            result = findFromParent(se, s, possibleTransitions, se.grandParentTransition);
-            if (result != null) {
-                System.err.println("Needed all the way to grand parent for " + s + " starting from " + se);
-                return result;
-            }
+        // Else take any possible transitions going back to parent
+        result = findFromParent(se, s, possibleTransitions);
+        if (result != null) {
+            return result;
         }
 
         throw new IllegalStateException("Did not find any transition for " + s + " starting from " + se);
     }
 
-    private StateTransition findFromParent(SpawnedEventStateIncoming se,
-                                           SimpleState s,
-                                           EnumSet<StateTransition> possibleTransitions,
-                                           StateTransition parentTransition) {
-        SimpleState parentState = parentTransition.from;
+    private StateTransition findFromGrandParent(SpawnedEventStateIncoming se,
+                                                SimpleState s,
+                                                EnumSet<StateTransition> possibleTransitions) {
+        if (se.parentTransition == null) {
+            return null;
+        }
+        SimpleState parentState = se.parentTransition.from;
+        // Only grand parent can use this rule
         if (parentState == s) {
-            return parentTransition;
+            return se.parentTransition;
         }
         // For all possibles transition if one goes back to grandparent or transition to grandparent
         // choose it (there can be only one :)
+        StateTransition result = null;
         for (StateTransition possibleTransition : possibleTransitions) {
             for (SimpleState nextState : possibleTransition.next) {
-                if (nextState != se.transition.from &&
-                        (nextState == parentState
-                                || possiblesNextStates.get(nextState).contains(parentState)
-                        )) {
-                    return possibleTransition;
+                if (nextState == parentState) {
+                    if (result == null) {
+                        result = possibleTransition;
+                    } else {
+                        System.err.println("Found more than one grandparent equal based on " + se.parentTransition
+                                + " for " + possibleTransitions
+                                + " s=" + s + " and se=" + se);
+                    }
                 }
             }
         }
-        return null;
+        if (result != null) {
+            return result;
+        }
+        for (StateTransition possibleTransition : possibleTransitions) {
+            for (SimpleState nextState : possibleTransition.next) {
+                if (nextState != parentState && nextState != se.transition.from
+                        && possiblesNextStates.get(nextState).contains(parentState)
+                        ) {
+                    if (result == null || result == possibleTransition) {
+                        result = possibleTransition;
+                    } else {
+                        System.err.println("Found more than one grandparent transition to based on " + se.parentTransition
+                                + " for " + possibleTransitions
+                                + " s=" + s + " and se=" + se);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    private StateTransition findFromParent(SpawnedEventStateIncoming se,
+                                           SimpleState s,
+                                           EnumSet<StateTransition> possibleTransitions) {
+        SimpleState parentState = se.transition.from;
+        if (parentState == s) {
+            // Something wrong cannot transition to myself
+            throw new IllegalStateException("Transition from " + parentState + " to " + s + " not possible");
+        }
+        // For all possibles transition if one transition back to parent
+        // choose it (there can be only one :)
+        StateTransition result = null;
+        for (StateTransition possibleTransition : possibleTransitions) {
+            for (SimpleState nextState : possibleTransition.next) {
+                if (nextState != parentState
+                        && possiblesNextStates.get(nextState).contains(parentState)
+                        ) {
+                    if (result == null) {
+                        result = possibleTransition;
+                    } else {
+                        System.err.println("Found more than one parent transition to based on " + se.transition
+                                + " for " + possibleTransitions
+                                + " s=" + s + " and se=" + se);
+                    }
+                }
+            }
+        }
+        return result;
     }
 }
 

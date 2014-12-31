@@ -8,5 +8,5 @@ import java.util.List;
 public interface NextStateSelector {
     List<SpawnedEventState> nextSpawnedEvent(SpawnedEvent se);
 
-    SpawnedEventState createOriginalState(StateTransition transition);
+    SpawnedEventState createOriginalState(StateTransition transition, StateTransition previousState);
 }

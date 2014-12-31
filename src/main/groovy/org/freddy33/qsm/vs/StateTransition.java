@@ -224,4 +224,11 @@ public enum StateTransition {
                 ", next=" + Arrays.toString(next) +
                 '}';
     }
+
+    public boolean hasNext(SimpleState s) {
+        for (SimpleState state : next) {
+            if (state == s) return true;
+        }
+        return false;
+    }
 }

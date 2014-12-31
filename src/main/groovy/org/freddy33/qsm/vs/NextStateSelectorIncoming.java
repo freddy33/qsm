@@ -11,6 +11,9 @@ class SpawnedEventStateIncoming implements SpawnedEventState {
 
     SpawnedEventStateIncoming(StateTransition transition,
                               StateTransition parentTransition) {
+        if (transition == null || parentTransition == null) {
+            throw new NullPointerException("Transition and Parent Transition cannot be null");
+        }
         this.transition = transition;
         this.parentTransition = parentTransition;
     }
@@ -57,7 +60,37 @@ class SpawnedEventStateIncoming implements SpawnedEventState {
     @Override
     public int hashCode() {
         int result = transition.hashCode();
-        result = 31 * result + (parentTransition != null ? parentTransition.hashCode() : 0);
+        result = 31 * result + parentTransition.hashCode();
+        return result;
+    }
+}
+
+class NextTransitionKey {
+    final SpawnedEventStateIncoming se;
+    final SimpleState s;
+
+    NextTransitionKey(SpawnedEventStateIncoming se, SimpleState s) {
+        this.se = se;
+        this.s = s;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        NextTransitionKey that = (NextTransitionKey) o;
+
+        if (s != that.s) return false;
+        if (!se.equals(that.se)) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = se.hashCode();
+        result = 31 * result + s.hashCode();
         return result;
     }
 }
@@ -65,6 +98,7 @@ class SpawnedEventStateIncoming implements SpawnedEventState {
 public class NextStateSelectorIncoming extends BaseNextStateSelector {
     static final Map<SimpleStatePair, EnumSet<StateTransition>> transitionsPerPair = new HashMap<>();
     static final Map<SimpleState, EnumSet<SimpleState>> possiblesNextStates = new HashMap<>();
+    static final Map<NextTransitionKey, StateTransition> nextTransitions = new HashMap<>();
 
     public NextStateSelectorIncoming(SimpleState original) {
         super(original);
@@ -114,22 +148,29 @@ public class NextStateSelectorIncoming extends BaseNextStateSelector {
                 }
             }
         }
-    }
-
-    @Override
-    public List<SpawnedEventState> nextSpawnedEvent(SpawnedEvent se) {
-        SpawnedEventStateIncoming stateIncoming = (SpawnedEventStateIncoming) se.stateHolder;
-        List<SpawnedEventState> res = new ArrayList<>(3);
-        for (SimpleState state : stateIncoming.transition.next) {
-            res.add(new SpawnedEventStateIncoming(findTransition(stateIncoming, state),
-                    stateIncoming.transition));
+        for (StateTransition parentTransition : StateTransition.values()) {
+            for (SimpleState s : parentTransition.next) {
+                EnumSet<StateTransition> possibleTransitions =
+                        transitionsPerPair.get(new SimpleStatePair(parentTransition.from, s));
+                for (StateTransition possibleTransition : possibleTransitions) {
+                    createAndCacheNextTransition(possibleTransition, parentTransition);
+                }
+            }
         }
-        return res;
     }
 
-    @Override
-    public SpawnedEventState createOriginalState(StateTransition transition) {
-        return new SpawnedEventStateIncoming(transition, null);
+    private static void createAndCacheNextTransition(StateTransition transition, StateTransition parentTransition) {
+        SpawnedEventStateIncoming se = new SpawnedEventStateIncoming(transition, parentTransition);
+        for (SimpleState s : transition.next) {
+            NextTransitionKey key = new NextTransitionKey(se, s);
+            if (!nextTransitions.containsKey(key)) {
+                nextTransitions.put(key, calculateTransition(se, s));
+            }
+        }
+    }
+
+    public StateTransition findTransition(SpawnedEventStateIncoming se, SimpleState s) {
+        return nextTransitions.get(new NextTransitionKey(se, s));
     }
 
     /**
@@ -138,7 +179,7 @@ public class NextStateSelectorIncoming extends BaseNextStateSelector {
      * if (grandparent != me) choose the one having transition to grandparent
      * else choose the transition grandparent chose
      */
-    public StateTransition findTransition(SpawnedEventStateIncoming se, SimpleState s) {
+    public static StateTransition calculateTransition(SpawnedEventStateIncoming se, SimpleState s) {
         EnumSet<StateTransition> possibleTransitions = transitionsPerPair.get(new SimpleStatePair(se.transition.from, s));
         if (possibleTransitions.isEmpty()) {
             throw new IllegalStateException("Something fishy about " + se + " transition for " + s);
@@ -162,12 +203,9 @@ public class NextStateSelectorIncoming extends BaseNextStateSelector {
         throw new IllegalStateException("Did not find any transition for " + s + " starting from " + se);
     }
 
-    private StateTransition findFromGrandParent(SpawnedEventStateIncoming se,
-                                                SimpleState s,
-                                                EnumSet<StateTransition> possibleTransitions) {
-        if (se.parentTransition == null) {
-            return null;
-        }
+    private static StateTransition findFromGrandParent(SpawnedEventStateIncoming se,
+                                                       SimpleState s,
+                                                       EnumSet<StateTransition> possibleTransitions) {
         SimpleState parentState = se.parentTransition.from;
         // Only grand parent can use this rule
         if (parentState == s) {
@@ -182,7 +220,7 @@ public class NextStateSelectorIncoming extends BaseNextStateSelector {
                     if (result == null) {
                         result = possibleTransition;
                     } else {
-                        System.err.println("Found more than one grandparent equal based on " + se.parentTransition
+                        throw new IllegalStateException("Found more than one grandparent equal based on " + se.parentTransition
                                 + " for " + possibleTransitions
                                 + " s=" + s + " and se=" + se);
                     }
@@ -203,6 +241,7 @@ public class NextStateSelectorIncoming extends BaseNextStateSelector {
                         System.err.println("Found more than one grandparent transition to based on " + se.parentTransition
                                 + " for " + possibleTransitions
                                 + " s=" + s + " and se=" + se);
+                        return null;
                     }
                 }
             }
@@ -210,9 +249,9 @@ public class NextStateSelectorIncoming extends BaseNextStateSelector {
         return result;
     }
 
-    private StateTransition findFromParent(SpawnedEventStateIncoming se,
-                                           SimpleState s,
-                                           EnumSet<StateTransition> possibleTransitions) {
+    private static StateTransition findFromParent(SpawnedEventStateIncoming se,
+                                                  SimpleState s,
+                                                  EnumSet<StateTransition> possibleTransitions) {
         SimpleState parentState = se.transition.from;
         if (parentState == s) {
             // Something wrong cannot transition to myself
@@ -232,11 +271,28 @@ public class NextStateSelectorIncoming extends BaseNextStateSelector {
                         System.err.println("Found more than one parent transition to based on " + se.transition
                                 + " for " + possibleTransitions
                                 + " s=" + s + " and se=" + se);
+                        return null;
                     }
                 }
             }
         }
         return result;
+    }
+
+    @Override
+    public List<SpawnedEventState> nextSpawnedEvent(SpawnedEvent se) {
+        SpawnedEventStateIncoming stateIncoming = (SpawnedEventStateIncoming) se.stateHolder;
+        List<SpawnedEventState> res = new ArrayList<>(3);
+        for (SimpleState state : stateIncoming.transition.next) {
+            res.add(new SpawnedEventStateIncoming(findTransition(stateIncoming, state),
+                    stateIncoming.transition));
+        }
+        return res;
+    }
+
+    @Override
+    public SpawnedEventState createOriginalState(StateTransition transition, StateTransition previousState) {
+        return new SpawnedEventStateIncoming(transition, previousState);
     }
 }
 

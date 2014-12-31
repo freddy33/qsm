@@ -79,7 +79,7 @@ public class NextStateSelectorSequential extends BaseNextStateSelector {
     }
 
     @Override
-    public SpawnedEventState createOriginalState(StateTransition transition) {
+    public SpawnedEventState createOriginalState(StateTransition transition, StateTransition previousState) {
         return new SpawnedEventStateSequential(transition.from, 0, transition.next);
     }
 

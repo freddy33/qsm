@@ -25,7 +25,7 @@ public class SourceEvent {
     // Per time slice list of spawned events
     Map<Integer, Map<SpawnedEvent, SpawnedEvent>> currentPerTime = new HashMap<>();
 
-    public SourceEvent(int time, Point origin, StateTransition originalState) {
+    public SourceEvent(int time, Point origin, StateTransition originalState, StateTransition previousState) {
         this.id = counter.getAndIncrement();
         this.time = time;
         this.origin = origin;
@@ -43,7 +43,7 @@ public class SourceEvent {
             default:
                 throw new IllegalStateException("Next state mode " + Controls.nextStateMode + " not supported!");
         }
-        SpawnedEvent se = new SpawnedEvent(origin, 0, this.nextStateSelector.createOriginalState(originalState));
+        SpawnedEvent se = new SpawnedEvent(origin, 0, this.nextStateSelector.createOriginalState(originalState, previousState));
         Map<SpawnedEvent, SpawnedEvent> currentSpawned = new HashMap<>(1);
         this.currentPerTime.put(time, currentSpawned);
         currentSpawned.put(se, se);

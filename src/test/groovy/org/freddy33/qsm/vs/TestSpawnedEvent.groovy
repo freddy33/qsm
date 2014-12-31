@@ -17,7 +17,7 @@ class TestSpawnedEvent {
         Controls.moveMode = NextSpawnedMode.moveAndSplit
         verifyAll()
         def o = new Point(0, 0, 0)
-        def source = new SourceEvent(0, o, S1_1)
+        def source = new SourceEvent(0, o, S1_1, S24_1)
         SpawnedEvent spawn1 = checkInitialState(source)
 
         source.calcNext(spawn1)
@@ -37,7 +37,7 @@ class TestSpawnedEvent {
         Controls.moveMode = NextSpawnedMode.splitAndMove
         verifyAll()
         def o = new Point(0, 0, 0)
-        def source = new SourceEvent(0, o, S1_1)
+        def source = new SourceEvent(0, o, S1_1, S24_1)
         SpawnedEvent spawn1 = checkInitialState(source)
 
         source.calcNext(spawn1)

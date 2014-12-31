@@ -18,10 +18,10 @@ class Universe {
         def nt = System.nanoTime()
         def uni = new Universe()
         def trSize = 42
-        uni.addOriginalEvent(new Point(0, 0, 0), S1_1)
-        uni.addOriginalEvent(new Point(0, -trSize, (int) (1.732 * trSize)), S1_2)
-        uni.addOriginalEvent(new Point(0, -trSize, -(int) (1.732 * trSize)), S1_3)
-        uni.addOriginalEvent(new Point(0, 2 * trSize, 0), S1_4)
+        uni.addOriginalEvent(new Point(0, 0, 0), S1_1, S24_1)
+        uni.addOriginalEvent(new Point(0, -trSize, (int) (1.732 * trSize)), S1_2, S22_1)
+        uni.addOriginalEvent(new Point(0, -trSize, -(int) (1.732 * trSize)), S1_3, S19_1)
+        uni.addOriginalEvent(new Point(0, 2 * trSize, 0), S1_4, S21_1)
         println uni.activeSourceEvents.size()
         for (int i = 0; i < 400; i++) {
             uni.calcNext(uni.findNewEvents())
@@ -58,7 +58,7 @@ class Universe {
                             def key = new LengthAndState(se.length, s)
                             MatchingLengthAndStateSpawnedEvents events = result.get(key)
                             if (events == null) {
-                                events = new MatchingLengthAndStateSpawnedEvents(p, key, state)
+                                events = new MatchingLengthAndStateSpawnedEvents(p, se.length, s)
                                 result.put(key, events)
                             }
                             events.add(null, se)
@@ -114,8 +114,8 @@ class Universe {
      * @param p
      * @param s
      */
-    void addOriginalEvent(Point p, StateTransition s) {
-        activeSourceEvents.add(new SourceEvent(currentTime, p, s))
+    void addOriginalEvent(Point p, StateTransition s, StateTransition ps) {
+        activeSourceEvents.add(new SourceEvent(currentTime, p, s, ps))
     }
 
 }

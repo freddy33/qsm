@@ -44,10 +44,10 @@ public class JUniverse {
     }
 
     private void init() {
-        addOriginalEvent(new Point(0, 0, 0), S1_1);
-        addOriginalEvent(new Point(0, -TRIANGLE_HALF_SIDE, (int) (1.732 * TRIANGLE_HALF_SIDE)), S1_2);
-        addOriginalEvent(new Point(0, -TRIANGLE_HALF_SIDE, -(int) (1.732 * TRIANGLE_HALF_SIDE)), S1_3);
-        addOriginalEvent(new Point(0, 2 * TRIANGLE_HALF_SIDE, 0), S1_4);
+        addOriginalEvent(new Point(0, 0, 0), S1_1, S24_1);
+        addOriginalEvent(new Point(0, -TRIANGLE_HALF_SIDE, (int) (1.732 * TRIANGLE_HALF_SIDE)), S1_2, S22_1);
+        addOriginalEvent(new Point(0, -TRIANGLE_HALF_SIDE, -(int) (1.732 * TRIANGLE_HALF_SIDE)), S1_3, S19_1);
+        addOriginalEvent(new Point(0, 2 * TRIANGLE_HALF_SIDE, 0), S1_4, S21_1);
     }
 
     private void calcNext() {
@@ -148,7 +148,7 @@ public class JUniverse {
         matches.get(match).add(sourceEvent, spawnedEvent);
     }
 
-    void addOriginalEvent(Point p, StateTransition originalState) {
-        activeSourceEvents.add(new SourceEvent(currentTime, p, originalState));
+    void addOriginalEvent(Point p, StateTransition originalState, StateTransition previousState) {
+        activeSourceEvents.add(new SourceEvent(currentTime, p, originalState, previousState));
     }
 }

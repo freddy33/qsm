@@ -73,7 +73,7 @@ public class NextStateSelectorRandom extends BaseNextStateSelector {
     }
 
     @Override
-    public SpawnedEventState createOriginalState(StateTransition transition) {
+    public SpawnedEventState createOriginalState(StateTransition transition, StateTransition previousState) {
         return new SpawnedEventStateRandom(transition.from, transition.next);
     }
 

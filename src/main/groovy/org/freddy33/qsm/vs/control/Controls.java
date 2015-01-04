@@ -5,7 +5,7 @@ public abstract class Controls {
     public static boolean debug = false;
     public static boolean numbersOutput = true;
 
-    public static boolean blockCurrentlyUsed = false;
+    public static boolean blockCurrentlyUsed = true;
     public static NextStateMode nextStateMode = NextStateMode.incoming;
     public static NextSpawnedMode moveMode = NextSpawnedMode.splitAndMove;
     public static boolean matchAlsoState = false;

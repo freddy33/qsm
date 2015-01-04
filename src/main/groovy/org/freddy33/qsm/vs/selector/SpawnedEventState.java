@@ -1,4 +1,6 @@
-package org.freddy33.qsm.vs;
+package org.freddy33.qsm.vs.selector;
+
+import org.freddy33.qsm.vs.base.SimpleState;
 
 import java.util.EnumSet;
 

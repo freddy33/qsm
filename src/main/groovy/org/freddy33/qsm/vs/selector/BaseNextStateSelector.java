@@ -1,4 +1,7 @@
-package org.freddy33.qsm.vs;
+package org.freddy33.qsm.vs.selector;
+
+import org.freddy33.qsm.vs.base.SimpleState;
+import org.freddy33.qsm.vs.base.StateTransition;
 
 import java.util.Arrays;
 import java.util.List;

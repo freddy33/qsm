@@ -1,5 +1,16 @@
 package org.freddy33.qsm.vs;
 
+import org.freddy33.qsm.vs.base.Point;
+import org.freddy33.qsm.vs.base.SimpleStateGroup;
+import org.freddy33.qsm.vs.base.StateTransition;
+import org.freddy33.qsm.vs.control.Controls;
+import org.freddy33.qsm.vs.event.SourceEvent;
+import org.freddy33.qsm.vs.event.SpawnedEvent;
+import org.freddy33.qsm.vs.matcher.MatchingLengthAndStateSpawnedEvents;
+import org.freddy33.qsm.vs.matcher.MatchingOnlyLengthSpawnedEvents;
+import org.freddy33.qsm.vs.matcher.MatchingSpawnedEvents;
+import org.freddy33.qsm.vs.utils.CollectionUtils;
+
 import java.text.MessageFormat;
 import java.util.HashSet;
 import java.util.Map;
@@ -7,7 +18,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.freddy33.qsm.vs.StateTransition.*;
+import static org.freddy33.qsm.vs.base.StateTransition.*;
 
 /**
  * @author freds on 12/16/14.
@@ -134,9 +145,7 @@ public class JUniverse {
             System.out.println("We found 4 at " + currentTime + "\n");
             for (Map.Entry<Set<SourceEvent>, Set<MatchingSpawnedEvents>> setSetEntry : matchPerSourceCollection.entrySet()) {
                 System.out.printf("\t%s :\n", setSetEntry.getKey());
-                setSetEntry.getValue().forEach(mse -> {
-                    System.out.printf("\t\t%s\n", mse.getPoint());
-                });
+                setSetEntry.getValue().forEach(mse -> System.out.printf("\t\t%s\n", mse.getPoint()));
             }
             stop = true;
         }

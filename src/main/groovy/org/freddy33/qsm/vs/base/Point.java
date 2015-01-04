@@ -1,10 +1,10 @@
-package org.freddy33.qsm.vs;
+package org.freddy33.qsm.vs.base;
 
 /**
  * @author freds on 12/2/14.
  */
 public class Point {
-    int x, y, z;
+    public final int x, y, z;
 
     public Point(int x, int y, int z) {
         this.x = x;

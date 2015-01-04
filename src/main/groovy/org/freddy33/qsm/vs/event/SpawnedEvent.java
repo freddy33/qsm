@@ -1,12 +1,15 @@
-package org.freddy33.qsm.vs;
+package org.freddy33.qsm.vs.event;
+
+import org.freddy33.qsm.vs.base.Point;
+import org.freddy33.qsm.vs.selector.SpawnedEventState;
 
 /**
  * @author freds on 12/8/14.
  */
 public class SpawnedEvent {
-    final Point p;
-    final int length;
-    final SpawnedEventState stateHolder;
+    public final Point p;
+    public final int length;
+    public final SpawnedEventState stateHolder;
 
     public SpawnedEvent(Point p, int length, SpawnedEventState stateHolder) {
         this.p = p;

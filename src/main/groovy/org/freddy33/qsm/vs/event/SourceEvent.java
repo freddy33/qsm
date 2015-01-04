@@ -1,4 +1,11 @@
-package org.freddy33.qsm.vs;
+package org.freddy33.qsm.vs.event;
+
+import org.freddy33.qsm.vs.base.Point;
+import org.freddy33.qsm.vs.base.SimpleState;
+import org.freddy33.qsm.vs.base.StateTransition;
+import org.freddy33.qsm.vs.control.Controls;
+import org.freddy33.qsm.vs.control.NextSpawnedMode;
+import org.freddy33.qsm.vs.selector.*;
 
 import java.util.HashMap;
 import java.util.List;
@@ -13,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class SourceEvent {
     final static AtomicInteger counter = new AtomicInteger(0);
 
-    final int id;
+    public final int id;
     final int time;
     final Point origin;
     final StateTransition originalState;
@@ -79,7 +86,7 @@ public class SourceEvent {
         return currentSpawned.keySet();
     }
 
-    void calcNext(SpawnedEvent se) {
+    public void calcNext(SpawnedEvent se) {
         List<SpawnedEventState> spawnedEventStates = this.nextStateSelector.nextSpawnedEvent(se);
         if (Controls.moveMode == NextSpawnedMode.moveAndSplit) {
             SimpleState origSimpleState = se.stateHolder.getSimpleState();

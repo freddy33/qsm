@@ -1,4 +1,8 @@
-package org.freddy33.qsm.vs;
+package org.freddy33.qsm.vs.matcher;
+
+import org.freddy33.qsm.vs.base.Point;
+import org.freddy33.qsm.vs.event.SourceEvent;
+import org.freddy33.qsm.vs.event.SpawnedEvent;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -7,9 +11,9 @@ import java.util.Set;
  * @author freds on 12/16/14.
  */
 public abstract class BaseMatchingSpawnedEvents implements MatchingSpawnedEvents {
-    final Point p;
-    final int length;
-    final Set<SourceEvent> sourcesInvolved = new HashSet<>(3);
+    public final Point p;
+    public final int length;
+    public final Set<SourceEvent> sourcesInvolved = new HashSet<>(3);
 
     public BaseMatchingSpawnedEvents(Point p, int length) {
         this.p = p;

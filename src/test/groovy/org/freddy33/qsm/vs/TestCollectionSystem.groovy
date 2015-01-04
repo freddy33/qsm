@@ -1,11 +1,14 @@
 package org.freddy33.qsm.vs
 
+import org.freddy33.qsm.vs.base.Point
+import org.freddy33.qsm.vs.event.SourceEvent
+import org.freddy33.qsm.vs.utils.CollectionUtils
 import org.junit.Assert
 import org.junit.Test
 
-import static org.freddy33.qsm.vs.SimpleState.*
-import static org.freddy33.qsm.vs.StateTransition.S1_1
-import static org.freddy33.qsm.vs.StateTransition.S24_1
+import static org.freddy33.qsm.vs.base.SimpleState.*
+import static org.freddy33.qsm.vs.base.StateTransition.S1_1
+import static org.freddy33.qsm.vs.base.StateTransition.S24_1
 
 /**
  * @author freds on 12/16/14.

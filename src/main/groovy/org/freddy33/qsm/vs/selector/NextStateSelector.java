@@ -1,4 +1,7 @@
-package org.freddy33.qsm.vs;
+package org.freddy33.qsm.vs.selector;
+
+import org.freddy33.qsm.vs.base.StateTransition;
+import org.freddy33.qsm.vs.event.SpawnedEvent;
 
 import java.util.List;
 

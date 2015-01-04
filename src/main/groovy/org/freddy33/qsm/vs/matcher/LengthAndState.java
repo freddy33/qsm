@@ -1,4 +1,6 @@
-package org.freddy33.qsm.vs;
+package org.freddy33.qsm.vs.matcher;
+
+import org.freddy33.qsm.vs.base.SimpleState;
 
 /**
  * @author freds on 12/8/14.

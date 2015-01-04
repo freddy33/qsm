@@ -1,4 +1,6 @@
-package org.freddy33.qsm.vs;
+package org.freddy33.qsm.vs.matcher;
+
+import org.freddy33.qsm.vs.event.SourceEvent;
 
 import java.util.HashSet;
 import java.util.Set;

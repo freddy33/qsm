@@ -1,9 +1,16 @@
 package org.freddy33.qsm.vs
 
+import org.freddy33.qsm.vs.base.Point
+import org.freddy33.qsm.vs.control.Controls
+import org.freddy33.qsm.vs.control.NextSpawnedMode
+import org.freddy33.qsm.vs.control.NextStateMode
+import org.freddy33.qsm.vs.event.SourceEvent
+import org.freddy33.qsm.vs.event.SpawnedEvent
+import org.freddy33.qsm.vs.selector.SpawnedEventStateIncoming
 import org.junit.Test
 
-import static org.freddy33.qsm.vs.SimpleState.*
-import static org.freddy33.qsm.vs.StateTransition.*
+import static org.freddy33.qsm.vs.base.SimpleState.*
+import static org.freddy33.qsm.vs.base.StateTransition.*
 import static org.junit.Assert.*
 
 /**
@@ -45,20 +52,20 @@ class TestSpawnedEvent {
         assertEquals(2, next4.size())
 
         def it4 = next4.keySet().iterator()
-        def spawn_S7 = it4.next()
         def spawn_S9 = it4.next()
+        def spawn_S7 = it4.next()
 
         assertEquals(4, spawn_S7.length)
-        assertEquals(source.origin.add(S7), spawn_S7.p)
         assertEquals(S7, spawn_S7.stateHolder.simpleState)
+        assertEquals(source.origin.add(S7), spawn_S7.p)
         assertEquals(EnumSet.of(S8, S14, S1), spawn_S7.stateHolder.states)
         def stateHolder7 = (SpawnedEventStateIncoming) spawn_S7.stateHolder
         assertEquals(S1_1, stateHolder7.parentTransition)
         assertEquals(S7_4, stateHolder7.transition)
 
         assertEquals(4, spawn_S9.length)
-        assertEquals(source.origin.add(S9), spawn_S9.p)
         assertEquals(S9, spawn_S9.stateHolder.simpleState)
+        assertEquals(source.origin.add(S9), spawn_S9.p)
         assertEquals(EnumSet.of(S8, S11, S1), spawn_S9.stateHolder.states)
         def stateHolder9 = (SpawnedEventStateIncoming) spawn_S9.stateHolder
         assertEquals(S1_1, stateHolder9.parentTransition)

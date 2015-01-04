@@ -1,9 +1,11 @@
-package org.freddy33.qsm.vs;
+package org.freddy33.qsm.vs.base;
+
+import org.freddy33.qsm.vs.selector.NextStateSelectorIncoming;
 
 import java.util.*;
 
-import static org.freddy33.qsm.vs.SimpleState.*;
-import static org.freddy33.qsm.vs.SimpleStateGroup.*;
+import static org.freddy33.qsm.vs.base.SimpleState.*;
+import static org.freddy33.qsm.vs.base.SimpleStateGroup.*;
 
 /**
  * @author freds on 12/2/14.
@@ -99,9 +101,9 @@ public enum StateTransition {
     S26_1(S26, S4, S5, S6),
     S26_2(S26, S16, S17, S18);
 
-    final static Map<SimpleState, List<StateTransition>> transitions = new HashMap<>(90);
-    final SimpleState from;
-    final SimpleState[] next;
+    public final static Map<SimpleState, List<StateTransition>> transitions = new HashMap<>(90);
+    public final SimpleState from;
+    public final SimpleState[] next;
 
     StateTransition(SimpleState from, SimpleState... next) {
         if (from == null || next == null) {
@@ -112,7 +114,7 @@ public enum StateTransition {
         verify();
     }
 
-    static void verifyAll() {
+    public static void verifyAll() {
         if (!transitions.isEmpty()) {
             return;
         }
@@ -193,9 +195,7 @@ public enum StateTransition {
             case ONE:
             case THREE:
                 for (SimpleState ns : next) {
-                    st.x += ns.x;
-                    st.y += ns.y;
-                    st.z += ns.z;
+                    st = st.add(ns);
                 }
                 break;
             case TWO:

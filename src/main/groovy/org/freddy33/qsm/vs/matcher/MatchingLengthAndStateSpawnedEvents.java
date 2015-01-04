@@ -1,4 +1,9 @@
-package org.freddy33.qsm.vs;
+package org.freddy33.qsm.vs.matcher;
+
+import org.freddy33.qsm.vs.base.Point;
+import org.freddy33.qsm.vs.base.SimpleState;
+import org.freddy33.qsm.vs.event.SourceEvent;
+import org.freddy33.qsm.vs.event.SpawnedEvent;
 
 /**
  * @author freds on 12/9/14.

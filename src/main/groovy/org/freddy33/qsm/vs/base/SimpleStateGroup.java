@@ -1,4 +1,4 @@
-package org.freddy33.qsm.vs;
+package org.freddy33.qsm.vs.base;
 
 /**
  * @author freds on 12/6/14.
@@ -6,7 +6,7 @@ package org.freddy33.qsm.vs;
 public enum SimpleStateGroup {
     ZERO(1), ONE(3), TWO(4), THREE(5);
 
-    final int delta;
+    public final int delta;
 
     SimpleStateGroup(int delta) {
         this.delta = delta;

@@ -1,54 +1,12 @@
-package org.freddy33.qsm.vs;
+package org.freddy33.qsm.vs.selector;
 
-import java.util.ArrayList;
-import java.util.EnumSet;
+import org.freddy33.qsm.vs.base.SimpleState;
+import org.freddy33.qsm.vs.base.StateTransition;
+import org.freddy33.qsm.vs.event.SpawnedEvent;
+
 import java.util.List;
 import java.util.Random;
-
-/**
- * @author freds on 12/25/14.
- */
-class SpawnedEventStateRandom implements SpawnedEventState {
-    final SimpleState from;
-    final EnumSet<SimpleState> states;
-
-    SpawnedEventStateRandom(SimpleState from, SimpleState... ns) {
-        this.from = from;
-        this.states = EnumSet.of(ns[0], ns);
-    }
-
-    @Override
-    public synchronized void add(SpawnedEventState newStates) {
-        this.states.addAll(((SpawnedEventStateRandom) newStates).states);
-    }
-
-    @Override
-    public SimpleState getSimpleState() {
-        return from;
-    }
-
-    @Override
-    public EnumSet<SimpleState> getStates() {
-        return states;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        SpawnedEventStateRandom that = (SpawnedEventStateRandom) o;
-
-        if (from != that.from) return false;
-
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        return from.hashCode();
-    }
-}
+import java.util.stream.Collectors;
 
 
 public class NextStateSelectorRandom extends BaseNextStateSelector {
@@ -65,11 +23,8 @@ public class NextStateSelectorRandom extends BaseNextStateSelector {
     @Override
     public List<SpawnedEventState> nextSpawnedEvent(SpawnedEvent se) {
         SpawnedEventStateRandom stateHolder = (SpawnedEventStateRandom) se.stateHolder;
-        List<SpawnedEventState> res = new ArrayList<>(stateHolder.states.size());
-        for (SimpleState state : stateHolder.states) {
-            res.add(new SpawnedEventStateRandom(state, nextStates(state)));
-        }
-        return res;
+        return stateHolder.states.stream().map(state -> new SpawnedEventStateRandom(state, nextStates(state)))
+                .collect(Collectors.toList());
     }
 
     @Override

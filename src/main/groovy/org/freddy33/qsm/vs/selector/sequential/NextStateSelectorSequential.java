@@ -1,8 +1,11 @@
-package org.freddy33.qsm.vs.selector;
+package org.freddy33.qsm.vs.selector.sequential;
 
 import org.freddy33.qsm.vs.base.SimpleState;
 import org.freddy33.qsm.vs.base.StateTransition;
 import org.freddy33.qsm.vs.event.SpawnedEvent;
+import org.freddy33.qsm.vs.selector.common.BaseNextStateSelector;
+import org.freddy33.qsm.vs.selector.common.SpawnedEventState;
+import org.freddy33.qsm.vs.selector.common.TransitionMode;
 
 import java.util.ArrayList;
 import java.util.List;

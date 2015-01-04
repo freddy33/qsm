@@ -1,4 +1,6 @@
-package org.freddy33.qsm.vs.selector;
+package org.freddy33.qsm.vs.selector.random;
+
+import org.freddy33.qsm.vs.selector.common.TransitionMode;
 
 import java.util.EnumMap;
 

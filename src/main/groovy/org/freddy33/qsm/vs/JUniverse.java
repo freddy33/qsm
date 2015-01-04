@@ -32,7 +32,7 @@ public class JUniverse {
     Set<SourceEvent> activeSourceEvents = new HashSet<>();
 
     public static void main(String[] args) {
-        StateTransition.verifyAll();
+        StateTransition.verifyAllTransitions();
         // MAX_ROUND should be at least X
         int minTime = TRIANGLE_HALF_SIDE * SimpleStateGroup.ONE.delta;
         if (MAX_ROUND <= minTime) {

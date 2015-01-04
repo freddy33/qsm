@@ -1,8 +1,10 @@
-package org.freddy33.qsm.vs.selector;
+package org.freddy33.qsm.vs.selector.incoming;
 
 import org.freddy33.qsm.vs.base.SimpleState;
 import org.freddy33.qsm.vs.base.StateTransition;
 import org.freddy33.qsm.vs.event.SpawnedEvent;
+import org.freddy33.qsm.vs.selector.common.BaseNextStateSelector;
+import org.freddy33.qsm.vs.selector.common.SpawnedEventState;
 
 import java.util.*;
 
@@ -15,7 +17,7 @@ public class NextStateSelectorIncoming extends BaseNextStateSelector {
         super(original);
     }
 
-    public static void verifyAll() {
+    public static void verifyAllNextSelector() {
         for (SimpleState current : SimpleState.values()) {
             List<StateTransition> stateTransitions = StateTransition.transitions.get(current);
             for (StateTransition transition : stateTransitions) {

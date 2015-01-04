@@ -1,8 +1,9 @@
-package org.freddy33.qsm.vs.selector;
+package org.freddy33.qsm.vs.selector.incoming;
 
 import org.freddy33.qsm.vs.base.SimpleState;
 import org.freddy33.qsm.vs.base.StateTransition;
 import org.freddy33.qsm.vs.control.Controls;
+import org.freddy33.qsm.vs.selector.common.SpawnedEventState;
 
 import java.util.EnumSet;
 

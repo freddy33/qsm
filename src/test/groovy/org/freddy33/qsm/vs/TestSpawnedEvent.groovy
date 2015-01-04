@@ -6,7 +6,7 @@ import org.freddy33.qsm.vs.control.NextSpawnedMode
 import org.freddy33.qsm.vs.control.NextStateMode
 import org.freddy33.qsm.vs.event.SourceEvent
 import org.freddy33.qsm.vs.event.SpawnedEvent
-import org.freddy33.qsm.vs.selector.SpawnedEventStateIncoming
+import org.freddy33.qsm.vs.selector.incoming.SpawnedEventStateIncoming
 import org.junit.Test
 
 import static org.freddy33.qsm.vs.base.SimpleState.*
@@ -22,7 +22,7 @@ class TestSpawnedEvent {
     public void 'test next state incoming and move and split'() {
         Controls.nextStateMode = NextStateMode.incoming
         Controls.moveMode = NextSpawnedMode.moveAndSplit
-        verifyAll()
+        verifyAllTransitions()
         def o = new Point(0, 0, 0)
         def source = new SourceEvent(0, o, S1_1, S24_1)
         SpawnedEvent spawn1 = checkInitialState(source)
@@ -42,7 +42,7 @@ class TestSpawnedEvent {
     public void 'test next state incoming and split and move'() {
         Controls.nextStateMode = NextStateMode.incoming
         Controls.moveMode = NextSpawnedMode.splitAndMove
-        verifyAll()
+        verifyAllTransitions()
         def o = new Point(0, 0, 0)
         def source = new SourceEvent(0, o, S1_1, S24_1)
         SpawnedEvent spawn1 = checkInitialState(source)

@@ -5,7 +5,11 @@ import org.freddy33.qsm.vs.base.SimpleState;
 import org.freddy33.qsm.vs.base.StateTransition;
 import org.freddy33.qsm.vs.control.Controls;
 import org.freddy33.qsm.vs.control.NextSpawnedMode;
-import org.freddy33.qsm.vs.selector.*;
+import org.freddy33.qsm.vs.selector.common.NextStateSelector;
+import org.freddy33.qsm.vs.selector.common.SpawnedEventState;
+import org.freddy33.qsm.vs.selector.incoming.NextStateSelectorIncoming;
+import org.freddy33.qsm.vs.selector.random.NextStateSelectorRandom;
+import org.freddy33.qsm.vs.selector.sequential.NextStateSelectorSequential;
 
 import java.util.HashMap;
 import java.util.List;

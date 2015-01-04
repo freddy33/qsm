@@ -1,4 +1,4 @@
-package org.freddy33.qsm.vs.selector;
+package org.freddy33.qsm.vs.selector.common;
 
 import org.freddy33.qsm.vs.base.StateTransition;
 import org.freddy33.qsm.vs.event.SpawnedEvent;

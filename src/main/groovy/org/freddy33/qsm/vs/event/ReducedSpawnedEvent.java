@@ -1,6 +1,6 @@
 package org.freddy33.qsm.vs.event;
 
-import org.freddy33.qsm.vs.selector.SpawnedEventState;
+import org.freddy33.qsm.vs.selector.common.SpawnedEventState;
 
 /**
  * @author freds on 12/8/14.

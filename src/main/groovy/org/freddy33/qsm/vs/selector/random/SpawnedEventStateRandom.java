@@ -1,27 +1,25 @@
-package org.freddy33.qsm.vs.selector;
+package org.freddy33.qsm.vs.selector.random;
 
 import org.freddy33.qsm.vs.base.SimpleState;
+import org.freddy33.qsm.vs.selector.common.SpawnedEventState;
 
 import java.util.EnumSet;
 
 /**
  * @author freds on 12/25/14.
  */
-
-public class SpawnedEventStateSequential implements SpawnedEventState {
+public class SpawnedEventStateRandom implements SpawnedEventState {
     final SimpleState from;
     final EnumSet<SimpleState> states;
-    final int counter;
 
-    SpawnedEventStateSequential(SimpleState from, int counter, SimpleState... ns) {
+    SpawnedEventStateRandom(SimpleState from, SimpleState... ns) {
         this.from = from;
-        this.counter = counter;
         this.states = EnumSet.of(ns[0], ns);
     }
 
     @Override
     public synchronized void add(SpawnedEventState newStates) {
-        this.states.addAll(((SpawnedEventStateSequential) newStates).states);
+        this.states.addAll(((SpawnedEventStateRandom) newStates).states);
     }
 
     @Override
@@ -39,7 +37,7 @@ public class SpawnedEventStateSequential implements SpawnedEventState {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        SpawnedEventStateSequential that = (SpawnedEventStateSequential) o;
+        SpawnedEventStateRandom that = (SpawnedEventStateRandom) o;
 
         if (from != that.from) return false;
 

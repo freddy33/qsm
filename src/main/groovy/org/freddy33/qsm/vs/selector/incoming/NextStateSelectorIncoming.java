@@ -197,8 +197,10 @@ public class NextStateSelectorIncoming extends BaseNextStateSelector {
         SpawnedEventStateIncoming stateIncoming = (SpawnedEventStateIncoming) se.stateHolder;
         List<SpawnedEventState> res = new ArrayList<>(3);
         for (SimpleState state : stateIncoming.transition.next) {
-            res.add(new SpawnedEventStateIncoming(findTransition(stateIncoming, state),
-                    stateIncoming.transition));
+            if (!possiblesNextStates.get(getOriginal().getOpposite()).contains(state)) {
+                res.add(new SpawnedEventStateIncoming(findTransition(stateIncoming, state),
+                        stateIncoming.transition));
+            }
         }
         return res;
     }

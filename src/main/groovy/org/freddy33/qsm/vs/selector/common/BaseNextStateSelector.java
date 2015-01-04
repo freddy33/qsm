@@ -16,6 +16,10 @@ public abstract class BaseNextStateSelector implements NextStateSelector {
         this.original = original;
     }
 
+    public SimpleState getOriginal() {
+        return original;
+    }
+
     protected SimpleState[] getNextSimpleStates(SimpleState s, TransitionMode transitionMode, int transitionSelect) {
         switch (transitionMode) {
             case transitionFromOriginal: {

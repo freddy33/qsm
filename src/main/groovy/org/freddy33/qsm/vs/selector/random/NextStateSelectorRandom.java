@@ -26,7 +26,8 @@ public class NextStateSelectorRandom extends BaseNextStateSelector {
     @Override
     public List<SpawnedEventState> nextSpawnedEvent(SpawnedEvent se) {
         SpawnedEventStateRandom stateHolder = (SpawnedEventStateRandom) se.stateHolder;
-        return stateHolder.states.stream().map(state -> new SpawnedEventStateRandom(state, nextStates(state)))
+        return stateHolder.states.stream().filter(s -> !possiblesNextStates.get(getOriginal().getOpposite()).contains(s))
+                .map(state -> new SpawnedEventStateRandom(state, nextStates(state)))
                 .collect(Collectors.toList());
     }
 

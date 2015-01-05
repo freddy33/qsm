@@ -1,4 +1,4 @@
-package org.freddy33.qsm.vs.selector.incoming;
+package org.freddy33.qsm.vs.selector.common;
 
 import org.freddy33.qsm.vs.base.SimpleState;
 
@@ -6,10 +6,10 @@ import org.freddy33.qsm.vs.base.SimpleState;
  * Created by freds on 1/4/15.
  */
 public class SimpleStatePair {
-    final SimpleState parent;
-    final SimpleState current;
+    public final SimpleState parent;
+    public final SimpleState current;
 
-    SimpleStatePair(SimpleState parent, SimpleState current) {
+    public SimpleStatePair(SimpleState parent, SimpleState current) {
         this.parent = parent;
         this.current = current;
     }
@@ -32,5 +32,10 @@ public class SimpleStatePair {
         int result = parent.hashCode();
         result = 31 * result + current.hashCode();
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return "SimpleStatePair{ " + parent + ", " + current + '}';
     }
 }

@@ -7,8 +7,10 @@ import org.freddy33.qsm.vs.control.Controls;
 import org.freddy33.qsm.vs.control.NextSpawnedMode;
 import org.freddy33.qsm.vs.selector.common.NextStateSelector;
 import org.freddy33.qsm.vs.selector.common.SpawnedEventState;
-import org.freddy33.qsm.vs.selector.incoming.NextStateSelectorIncoming;
+import org.freddy33.qsm.vs.selector.incoming.NextStateSelectorSimpleIncoming;
+import org.freddy33.qsm.vs.selector.incoming.NextStateSelectorTransitionIncoming;
 import org.freddy33.qsm.vs.selector.random.NextStateSelectorRandom;
+import org.freddy33.qsm.vs.selector.sequential.NextStatePairSelectorSequential;
 import org.freddy33.qsm.vs.selector.sequential.NextStateSelectorSequential;
 
 import java.util.HashMap;
@@ -31,6 +33,7 @@ public class SourceEvent {
     final NextStateSelector nextStateSelector;
 
     final Map<Point, ReducedSpawnedEvent> used = new HashMap<>();
+
     // All the point present in currentPerTime after polling the active ones
     Map<Point, Point> currentlyUsed = new ConcurrentHashMap<>();
     // Per time slice list of spawned events
@@ -48,8 +51,14 @@ public class SourceEvent {
             case sequential:
                 this.nextStateSelector = new NextStateSelectorSequential(originalState.from);
                 break;
-            case incoming:
-                this.nextStateSelector = new NextStateSelectorIncoming(originalState.from);
+            case sequentialPair:
+                this.nextStateSelector = new NextStatePairSelectorSequential(originalState.from);
+                break;
+            case incomingSimple:
+                this.nextStateSelector = new NextStateSelectorSimpleIncoming(originalState.from);
+                break;
+            case incomingTransition:
+                this.nextStateSelector = new NextStateSelectorTransitionIncoming(originalState.from);
                 break;
             default:
                 throw new IllegalStateException("Next state mode " + Controls.nextStateMode + " not supported!");

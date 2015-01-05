@@ -1,6 +1,6 @@
 package org.freddy33.qsm.vs.base;
 
-import org.freddy33.qsm.vs.selector.incoming.NextStateSelectorIncoming;
+import org.freddy33.qsm.vs.selector.incoming.NextStateSelectorTransitionIncoming;
 
 import java.util.*;
 
@@ -140,7 +140,7 @@ public enum StateTransition {
                 }
             }
         }
-        NextStateSelectorIncoming.verifyAllNextSelector();
+        NextStateSelectorTransitionIncoming.verifyAllTransitionNextSelector();
     }
 
     private void checkStates(SimpleStateGroup[] states) {
@@ -231,5 +231,15 @@ public enum StateTransition {
             if (state == s) return true;
         }
         return false;
+    }
+
+    public EnumSet<SimpleState> others(SimpleState state) {
+        EnumSet<SimpleState> result = EnumSet.noneOf(SimpleState.class);
+        for (SimpleState s : next) {
+            if (s != state) {
+                result.add(s);
+            }
+        }
+        return result;
     }
 }

@@ -2,6 +2,7 @@ package org.freddy33.qsm.vs.utils;
 
 import org.freddy33.qsm.vs.event.SourceEvent;
 
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -9,6 +10,13 @@ import java.util.Set;
  * @author freds on 12/16/14.
  */
 public abstract class CollectionUtils {
+
+    public static <T extends Enum<T>> boolean intersect(EnumSet<T> s1, EnumSet<T> s2) {
+        for (T e : s1) {
+            if (s2.contains(e)) return true;
+        }
+        return false;
+    }
 
     public static Set<Set<SourceEvent>> extractSubSets(Set<SourceEvent> sourcesInvolved, int subSetSize) {
         Set<Set<SourceEvent>> setOfSets = new HashSet<>(4);

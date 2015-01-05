@@ -3,9 +3,9 @@ package org.freddy33.qsm.vs
 import org.freddy33.qsm.vs.base.Point
 import org.freddy33.qsm.vs.control.Controls
 import org.freddy33.qsm.vs.control.NextSpawnedMode
-import org.freddy33.qsm.vs.control.NextStateMode
 import org.freddy33.qsm.vs.event.SourceEvent
 import org.freddy33.qsm.vs.event.SpawnedEvent
+import org.freddy33.qsm.vs.selector.common.NextStateMode
 import org.freddy33.qsm.vs.selector.incoming.SpawnedEventStateIncoming
 import org.junit.Test
 
@@ -20,7 +20,7 @@ class TestSpawnedEvent {
 
     @Test
     public void 'test next state incoming and move and split'() {
-        Controls.nextStateMode = NextStateMode.incoming
+        Controls.nextStateMode = NextStateMode.incomingSimple
         Controls.moveMode = NextSpawnedMode.moveAndSplit
         verifyAllTransitions()
         def o = new Point(0, 0, 0)
@@ -40,7 +40,7 @@ class TestSpawnedEvent {
 
     @Test
     public void 'test next state incoming and split and move'() {
-        Controls.nextStateMode = NextStateMode.incoming
+        Controls.nextStateMode = NextStateMode.incomingSimple
         Controls.moveMode = NextSpawnedMode.splitAndMove
         verifyAllTransitions()
         def o = new Point(0, 0, 0)

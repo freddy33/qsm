@@ -142,10 +142,12 @@ public class JUniverse {
             }
         }
         if (matchPerSourceCollection.size() >= 4) {
-            System.out.println("We found 4 at " + currentTime + "\n");
+            System.out.println("We found 4 at " + currentTime);
+            int totalCombinations = 1;
             for (Map.Entry<Set<SourceEvent>, Set<MatchingSpawnedEvents>> setSetEntry : matchPerSourceCollection.entrySet()) {
                 System.out.printf("\t%s :\n", setSetEntry.getKey());
                 setSetEntry.getValue().forEach(mse -> System.out.printf("\t\t%s\n", mse.getPoint()));
+                totalCombinations *= setSetEntry.getValue().size();
             }
             stop = true;
         }

@@ -7,9 +7,9 @@ import org.freddy33.qsm.vs.event.SpawnedEvent;
 /**
  * @author freds on 12/9/14.
  */
-public class MatchingOnlyLengthSpawnedEvents extends BaseMatchingSpawnedEvents {
+public class MatchingLengthSpawnedEvents extends BaseMatchingSpawnedEvents {
 
-    public MatchingOnlyLengthSpawnedEvents(Point p, int length) {
+    public MatchingLengthSpawnedEvents(Point p, int length) {
         super(p, length);
     }
 
@@ -22,7 +22,7 @@ public class MatchingOnlyLengthSpawnedEvents extends BaseMatchingSpawnedEvents {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        MatchingOnlyLengthSpawnedEvents that = (MatchingOnlyLengthSpawnedEvents) o;
+        MatchingLengthSpawnedEvents that = (MatchingLengthSpawnedEvents) o;
 
         if (length != that.length) return false;
         if (!p.equals(that.p)) return false;

@@ -26,6 +26,10 @@ public class Point {
                 && ((y == z) || (y == 0) || (z == 0));
     }
 
+    public Point sub(Point p) {
+        return new Point(x - p.x, y - p.y, z - p.z);
+    }
+
     public Point add(SimpleState s) {
         return new Point(x + s.x, y + s.y, z + s.z);
     }

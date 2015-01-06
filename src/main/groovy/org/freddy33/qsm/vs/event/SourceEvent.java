@@ -27,10 +27,11 @@ public class SourceEvent {
     final static AtomicInteger counter = new AtomicInteger(0);
 
     public final int id;
-    final int time;
-    final Point origin;
-    final StateTransition originalState;
-    final NextStateSelector nextStateSelector;
+    public final int time;
+    public final Point origin;
+    public final StateTransition originalState;
+    public final StateTransition previousOriginalState;
+    public final NextStateSelector nextStateSelector;
 
     final Map<Point, ReducedSpawnedEvent> used = new HashMap<>();
 
@@ -44,6 +45,7 @@ public class SourceEvent {
         this.time = time;
         this.origin = origin;
         this.originalState = originalState;
+        this.previousOriginalState = previousState;
         switch (Controls.nextStateMode) {
             case random:
                 this.nextStateSelector = new NextStateSelectorRandom(originalState.from, id + time + origin.hashCode());
@@ -69,6 +71,10 @@ public class SourceEvent {
         currentSpawned.put(se, se);
     }
 
+    public Point getOrigin() {
+        return origin;
+    }
+
     public Set<SpawnedEvent> peekCurrent(int currentTime) {
         return currentPerTime.get(currentTime).keySet();
     }
@@ -80,14 +86,13 @@ public class SourceEvent {
             throw new IllegalStateException("Asking for states at time " + currentTime + " return null data!");
         }
         for (SpawnedEvent event : currentSpawned.keySet()) {
-            used.put(event.p, new ReducedSpawnedEvent(event));
+//            used.put(event.p, new ReducedSpawnedEvent(event));
+            used.put(event.p, null);
         }
         if (Controls.blockCurrentlyUsed) {
             currentlyUsed = new ConcurrentHashMap<>();
             for (Map<SpawnedEvent, SpawnedEvent> eventSet : currentPerTime.values()) {
-                eventSet.values().parallelStream().forEach(spawnedEvent -> {
-                    currentlyUsed.put(spawnedEvent.p, spawnedEvent.p);
-                });
+                eventSet.values().parallelStream().forEach(spawnedEvent -> currentlyUsed.put(spawnedEvent.p, spawnedEvent.p));
             }
         }
         for (int i = 1; i < 6; i++) {

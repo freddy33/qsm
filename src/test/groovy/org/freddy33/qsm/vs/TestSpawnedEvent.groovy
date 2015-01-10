@@ -52,8 +52,8 @@ class TestSpawnedEvent {
         assertEquals(2, next4.size())
 
         def it4 = next4.keySet().iterator()
-        def spawn_S9 = it4.next()
         def spawn_S7 = it4.next()
+        def spawn_S9 = it4.next()
 
         assertEquals(4, spawn_S7.length)
         assertEquals(S7, spawn_S7.stateHolder.simpleState)

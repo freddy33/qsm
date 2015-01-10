@@ -7,6 +7,7 @@ import org.freddy33.qsm.vs.selector.common.BaseNextStateSelector;
 import org.freddy33.qsm.vs.selector.common.SpawnedEventState;
 import org.freddy33.qsm.vs.selector.common.TransitionMode;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -17,16 +18,19 @@ public class NextStateSelectorRandom extends BaseNextStateSelector {
     static TransitionRatio transitionRatio = new TransitionRatio(0, 1, 3, 0);
 
     final Random random;
+    private EnumSet<SimpleState> oppositeStates;
 
     public NextStateSelectorRandom(SimpleState original, int seed) {
         super(original);
         this.random = new Random(seed);
+        this.oppositeStates = possiblesNextStates.get(getOriginal().getOpposite());
     }
 
     @Override
     public List<SpawnedEventState> nextSpawnedEvent(SpawnedEvent se) {
         SpawnedEventStateRandom stateHolder = (SpawnedEventStateRandom) se.stateHolder;
-        return stateHolder.states.stream().filter(s -> !possiblesNextStates.get(getOriginal().getOpposite()).contains(s))
+        return stateHolder.states.stream()
+                .filter(s -> !oppositeStates.contains(s)) // Never use an opposite
                 .map(state -> new SpawnedEventStateRandom(state, nextStates(state)))
                 .collect(Collectors.toList());
     }

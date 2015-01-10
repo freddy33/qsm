@@ -8,6 +8,6 @@ public abstract class Controls {
     public static boolean numbersOutput = true;
 
     public static boolean blockCurrentlyUsed = true;
-    public static NextStateMode nextStateMode = NextStateMode.incomingTransition;
+    public static NextStateMode nextStateMode = NextStateMode.random;
     public static NextSpawnedMode moveMode = NextSpawnedMode.splitAndMove;
 }

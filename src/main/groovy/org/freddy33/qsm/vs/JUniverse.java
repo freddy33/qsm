@@ -25,7 +25,7 @@ import static org.freddy33.qsm.vs.base.StateTransition.*;
  */
 public class JUniverse {
     public static final int MAX_ROUND = 4000;
-    public static final int TRIANGLE_HALF_SIDE = 50;
+    public static final int TRIANGLE_HALF_SIDE = 42;
     static boolean stop = false;
 
     int currentTime = 0;

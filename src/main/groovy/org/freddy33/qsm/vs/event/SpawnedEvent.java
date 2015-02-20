@@ -1,53 +1,12 @@
 package org.freddy33.qsm.vs.event;
 
 import org.freddy33.qsm.vs.base.Point;
-import org.freddy33.qsm.vs.selector.common.SpawnedEventState;
 
 /**
- * @author freds on 12/8/14.
+ * Created by freds on 1/10/15.
  */
-public class SpawnedEvent {
-    public final Point p;
-    public final int length;
-    public final SpawnedEventState stateHolder;
+public interface SpawnedEvent {
+    Point getPoint();
 
-    public SpawnedEvent(Point p, int length, SpawnedEventState stateHolder) {
-        this.p = p;
-        this.length = length;
-        this.stateHolder = stateHolder;
-    }
-
-    void addStates(SpawnedEventState newStates) {
-        this.stateHolder.add(newStates);
-    }
-
-    @Override
-    public String toString() {
-        return "SpawnedEvent{" + p +
-                ", l=" + length +
-                ", states=" + stateHolder +
-                '}';
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        SpawnedEvent that = (SpawnedEvent) o;
-
-        if (length != that.length) return false;
-        if (!p.equals(that.p)) return false;
-        if (!stateHolder.equals(that.stateHolder)) return false;
-
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = p.hashCode();
-        result = 31 * result + length;
-        result = 31 * result + stateHolder.hashCode();
-        return result;
-    }
+    int getLength();
 }

@@ -4,9 +4,9 @@ import org.freddy33.qsm.vs.base.Point;
 import org.freddy33.qsm.vs.base.SimpleStateGroup;
 import org.freddy33.qsm.vs.base.StateTransition;
 import org.freddy33.qsm.vs.control.Controls;
+import org.freddy33.qsm.vs.event.BaseSpawnedEvent;
 import org.freddy33.qsm.vs.event.ReducedSourceEvent;
 import org.freddy33.qsm.vs.event.SourceEvent;
-import org.freddy33.qsm.vs.event.SpawnedEvent;
 import org.freddy33.qsm.vs.matcher.MatchingLengthSpawnedEvents;
 import org.freddy33.qsm.vs.matcher.MatchingPointsBlock;
 import org.freddy33.qsm.vs.matcher.MatchingSourcesBlock;
@@ -58,10 +58,10 @@ public class JUniverse {
     }
 
     private void init() {
-        addOriginalEvent(new Point(0, 0, 0), S1_1, S24_1);
-        addOriginalEvent(new Point(0, -TRIANGLE_HALF_SIDE, (int) (1.732 * TRIANGLE_HALF_SIDE)), S1_2, S22_1);
-        addOriginalEvent(new Point(0, -TRIANGLE_HALF_SIDE, -(int) (1.732 * TRIANGLE_HALF_SIDE)), S1_3, S19_1);
-        addOriginalEvent(new Point(0, 2 * TRIANGLE_HALF_SIDE, 0), S1_4, S21_1);
+        addOriginalEvent(new Point(1, 0, 0), currentTime + 1, S1_1, S24_1);
+        addOriginalEvent(new Point(0, -TRIANGLE_HALF_SIDE, (int) (1.732 * TRIANGLE_HALF_SIDE)), currentTime, S1_2, S22_1);
+        addOriginalEvent(new Point(0, -TRIANGLE_HALF_SIDE, -(int) (1.732 * TRIANGLE_HALF_SIDE)), currentTime, S1_3, S19_1);
+        addOriginalEvent(new Point(0, 2 * TRIANGLE_HALF_SIDE, 0), currentTime, S1_4, S21_1);
     }
 
     private void calcNext() {
@@ -92,7 +92,7 @@ public class JUniverse {
                         oldSourceEvents.add(new ReducedSourceEvent(oldEvent, matchingSourcesBlock.getMatchingLength(), best));
                         // Choose the point opposite
                         int oppositeIdx = matchingSourcesBlock.getOppositeIdx(oldEvent.id);
-                        addOriginalEvent(best.points[oppositeIdx], oldEvent.originalState, oldEvent.previousOriginalState);
+                        addOriginalEvent(best.points[oppositeIdx], currentTime, oldEvent.originalState, oldEvent.previousOriginalState);
                     }
                     break;
                 }
@@ -126,11 +126,20 @@ public class JUniverse {
 
     private Map<MatchingSpawnedEvents, MatchingSpawnedEvents> aggregateAllMatches() {
         Map<MatchingSpawnedEvents, MatchingSpawnedEvents> matches = new ConcurrentHashMap<>();
-        activeSourceEvents.parallelStream().forEach(sourceEvent ->
-                sourceEvent.peekCurrent(currentTime).parallelStream().forEach(spawnedEvent -> {
-                    addMatch(matches, new MatchingLengthSpawnedEvents(
-                            spawnedEvent.p, spawnedEvent.length), sourceEvent, spawnedEvent);
-                }));
+        activeSourceEvents.parallelStream().forEach(sourceEvent -> {
+            sourceEvent.peekCurrent(currentTime - 2).parallelStream().forEach(spawnedEvent -> {
+                addMatch(matches, new MatchingLengthSpawnedEvents(
+                        spawnedEvent.getPoint(), spawnedEvent.length), sourceEvent, spawnedEvent);
+            });
+            sourceEvent.peekCurrent(currentTime - 1).parallelStream().forEach(spawnedEvent -> {
+                addMatch(matches, new MatchingLengthSpawnedEvents(
+                        spawnedEvent.getPoint(), spawnedEvent.length), sourceEvent, spawnedEvent);
+            });
+            sourceEvent.peekCurrent(currentTime).parallelStream().forEach(spawnedEvent -> {
+                addMatch(matches, new MatchingLengthSpawnedEvents(
+                        spawnedEvent.getPoint(), spawnedEvent.length), sourceEvent, spawnedEvent);
+            });
+        });
         if (Controls.info) {
             System.out.printf("%d : %,d\n", currentTime, matches.size());
         }
@@ -147,12 +156,12 @@ public class JUniverse {
     }
 
     private void addMatch(Map<MatchingSpawnedEvents, MatchingSpawnedEvents> matches,
-                          MatchingSpawnedEvents match, SourceEvent sourceEvent, SpawnedEvent spawnedEvent) {
+                          MatchingSpawnedEvents match, SourceEvent sourceEvent, BaseSpawnedEvent spawnedEvent) {
         matches.putIfAbsent(match, match);
         matches.get(match).add(sourceEvent, spawnedEvent);
     }
 
-    void addOriginalEvent(Point p, StateTransition originalState, StateTransition previousState) {
-        activeSourceEvents.add(new SourceEvent(currentTime, p, originalState, previousState));
+    void addOriginalEvent(Point p, int time, StateTransition originalState, StateTransition previousState) {
+        activeSourceEvents.add(new SourceEvent(time, p, originalState, previousState));
     }
 }

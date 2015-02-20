@@ -2,7 +2,7 @@ package org.freddy33.qsm.vs.selector.sequential;
 
 import org.freddy33.qsm.vs.base.SimpleState;
 import org.freddy33.qsm.vs.base.StateTransition;
-import org.freddy33.qsm.vs.event.SpawnedEvent;
+import org.freddy33.qsm.vs.event.BaseSpawnedEvent;
 import org.freddy33.qsm.vs.selector.common.BaseNextStateSelector;
 import org.freddy33.qsm.vs.selector.common.SpawnedEventState;
 import org.freddy33.qsm.vs.selector.common.TransitionMode;
@@ -23,7 +23,7 @@ public class NextStateSelectorSequential extends BaseNextStateSelector {
     }
 
     @Override
-    public List<SpawnedEventState> nextSpawnedEvent(SpawnedEvent se) {
+    public List<SpawnedEventState> nextSpawnedEvent(BaseSpawnedEvent se) {
         SpawnedEventStateSequential stateHolder = (SpawnedEventStateSequential) se.stateHolder;
         List<SpawnedEventState> res = new ArrayList<>(stateHolder.states.size());
         int i = 0;

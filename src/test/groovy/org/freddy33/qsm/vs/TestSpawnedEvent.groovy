@@ -4,7 +4,7 @@ import org.freddy33.qsm.vs.base.Point
 import org.freddy33.qsm.vs.control.Controls
 import org.freddy33.qsm.vs.control.NextSpawnedMode
 import org.freddy33.qsm.vs.event.SourceEvent
-import org.freddy33.qsm.vs.event.SpawnedEvent
+import org.freddy33.qsm.vs.event.BaseSpawnedEvent
 import org.freddy33.qsm.vs.selector.common.NextStateMode
 import org.freddy33.qsm.vs.selector.incoming.SpawnedEventStateIncoming
 import org.junit.Test
@@ -25,7 +25,7 @@ class TestSpawnedEvent {
         verifyAllTransitions()
         def o = new Point(0, 0, 0)
         def source = new SourceEvent(0, o, S1_1, S24_1)
-        SpawnedEvent spawn1 = checkInitialState(source)
+        BaseSpawnedEvent spawn1 = checkInitialState(source)
 
         source.calcNext(spawn1)
         def next = source.currentPerTime.get(3);
@@ -45,7 +45,7 @@ class TestSpawnedEvent {
         verifyAllTransitions()
         def o = new Point(0, 0, 0)
         def source = new SourceEvent(0, o, S1_1, S24_1)
-        SpawnedEvent spawn1 = checkInitialState(source)
+        BaseSpawnedEvent spawn1 = checkInitialState(source)
 
         source.calcNext(spawn1)
         def next4 = source.currentPerTime.get(4)
@@ -87,7 +87,7 @@ class TestSpawnedEvent {
         assertEquals(1, source.used.size())
     }
 
-    private SpawnedEvent checkInitialState(SourceEvent source) {
+    private BaseSpawnedEvent checkInitialState(SourceEvent source) {
         assertEquals(1, source.currentPerTime.size())
         assertEquals(1, source.currentPerTime.get(0).size())
         def spawn1 = source.currentPerTime.get(0).keySet().iterator().next()

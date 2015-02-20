@@ -8,6 +8,7 @@ version = '1.0-SNAPSHOT'
 repositories {
     mavenLocal()
     jcenter()
+    maven { url 'http://maven.jzy3d.org/snapshots' }
 }
 
 dependencies {

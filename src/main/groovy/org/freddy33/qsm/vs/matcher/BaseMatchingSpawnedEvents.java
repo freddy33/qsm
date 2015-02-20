@@ -1,8 +1,8 @@
 package org.freddy33.qsm.vs.matcher;
 
 import org.freddy33.qsm.vs.base.Point;
+import org.freddy33.qsm.vs.event.BaseSpawnedEvent;
 import org.freddy33.qsm.vs.event.SourceEvent;
-import org.freddy33.qsm.vs.event.SpawnedEvent;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -36,8 +36,8 @@ public abstract class BaseMatchingSpawnedEvents implements MatchingSpawnedEvents
     }
 
     @Override
-    public void add(SourceEvent sourceEvent, SpawnedEvent se) {
-        if (!p.equals(se.p)) {
+    public void add(SourceEvent sourceEvent, BaseSpawnedEvent se) {
+        if (!p.equals(se.point)) {
             throw new IllegalArgumentException("Spawned Event " + se + " does not point to " + p);
         }
         if (se.length != length) {

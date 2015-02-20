@@ -2,7 +2,7 @@ package org.freddy33.qsm.vs.selector.random;
 
 import org.freddy33.qsm.vs.base.SimpleState;
 import org.freddy33.qsm.vs.base.StateTransition;
-import org.freddy33.qsm.vs.event.SpawnedEvent;
+import org.freddy33.qsm.vs.event.BaseSpawnedEvent;
 import org.freddy33.qsm.vs.selector.common.BaseNextStateSelector;
 import org.freddy33.qsm.vs.selector.common.SpawnedEventState;
 import org.freddy33.qsm.vs.selector.common.TransitionMode;
@@ -27,7 +27,7 @@ public class NextStateSelectorRandom extends BaseNextStateSelector {
     }
 
     @Override
-    public List<SpawnedEventState> nextSpawnedEvent(SpawnedEvent se) {
+    public List<SpawnedEventState> nextSpawnedEvent(BaseSpawnedEvent se) {
         SpawnedEventStateRandom stateHolder = (SpawnedEventStateRandom) se.stateHolder;
         return stateHolder.states.stream()
                 .filter(s -> !oppositeStates.contains(s)) // Never use an opposite

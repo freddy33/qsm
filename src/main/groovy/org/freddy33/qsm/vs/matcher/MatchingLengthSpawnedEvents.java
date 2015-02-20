@@ -1,8 +1,8 @@
 package org.freddy33.qsm.vs.matcher;
 
 import org.freddy33.qsm.vs.base.Point;
+import org.freddy33.qsm.vs.event.BaseSpawnedEvent;
 import org.freddy33.qsm.vs.event.SourceEvent;
-import org.freddy33.qsm.vs.event.SpawnedEvent;
 
 /**
  * @author freds on 12/9/14.
@@ -13,7 +13,7 @@ public class MatchingLengthSpawnedEvents extends BaseMatchingSpawnedEvents {
         super(p, length);
     }
 
-    public void add(SourceEvent sourceEvent, SpawnedEvent se) {
+    public void add(SourceEvent sourceEvent, BaseSpawnedEvent se) {
         super.add(sourceEvent, se);
     }
 

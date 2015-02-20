@@ -13,10 +13,7 @@ import org.freddy33.qsm.vs.selector.random.NextStateSelectorRandom;
 import org.freddy33.qsm.vs.selector.sequential.NextStatePairSelectorSequential;
 import org.freddy33.qsm.vs.selector.sequential.NextStateSelectorSequential;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -37,8 +34,10 @@ public class SourceEvent {
 
     // All the point present in currentPerTime after polling the active ones
     Map<Point, Point> currentlyUsed = new ConcurrentHashMap<>();
-    // Per time slice list of spawned events
-    Map<Integer, Map<SpawnedEvent, SpawnedEvent>> currentPerTime = new HashMap<>();
+    // Per time slice list of active spawned events
+    Map<Integer, Map<BaseSpawnedEvent, BaseSpawnedEvent>> currentPerTime = new HashMap<>();
+    // Per time slice list of old spawned events
+    Map<Integer, Map<BaseSpawnedEvent, BaseSpawnedEvent>> usedPerTime = new HashMap<>();
 
     public SourceEvent(int time, Point origin, StateTransition originalState, StateTransition previousState) {
         this.id = counter.getAndIncrement();
@@ -65,8 +64,8 @@ public class SourceEvent {
             default:
                 throw new IllegalStateException("Next state mode " + Controls.nextStateMode + " not supported!");
         }
-        SpawnedEvent se = new SpawnedEvent(origin, 0, this.nextStateSelector.createOriginalState(originalState, previousState));
-        Map<SpawnedEvent, SpawnedEvent> currentSpawned = new HashMap<>(1);
+        BaseSpawnedEvent se = new BaseSpawnedEvent(origin, 0, this.nextStateSelector.createOriginalState(originalState, previousState));
+        Map<BaseSpawnedEvent, BaseSpawnedEvent> currentSpawned = new HashMap<>(1);
         this.currentPerTime.put(time, currentSpawned);
         currentSpawned.put(se, se);
     }
@@ -75,24 +74,33 @@ public class SourceEvent {
         return origin;
     }
 
-    public Set<SpawnedEvent> peekCurrent(int currentTime) {
-        return currentPerTime.get(currentTime).keySet();
+    public Set<BaseSpawnedEvent> peekCurrent(int currentTime) {
+        Map<BaseSpawnedEvent, BaseSpawnedEvent> result = currentPerTime.get(currentTime);
+        if (result == null) {
+            result = usedPerTime.get(currentTime);
+            if (result == null) {
+                return new HashSet<>(0);
+            }
+        }
+        return result.keySet();
     }
 
-    public synchronized Set<SpawnedEvent> pollCurrent(int currentTime) {
-        Map<SpawnedEvent, SpawnedEvent> currentSpawned = currentPerTime.remove(currentTime);
+    public synchronized Set<BaseSpawnedEvent> pollCurrent(int currentTime) {
+        Map<BaseSpawnedEvent, BaseSpawnedEvent> currentSpawned = currentPerTime.remove(currentTime);
         if (currentSpawned == null) {
-            // There should always be something at the time
-            throw new IllegalStateException("Asking for states at time " + currentTime + " return null data!");
+            // Nothing in this event
+            return new HashSet<>(0);
         }
+        usedPerTime.remove(currentTime - 3);
+        usedPerTime.put(currentTime, currentSpawned);
         for (SpawnedEvent event : currentSpawned.keySet()) {
-//            used.put(event.p, new ReducedSpawnedEvent(event));
-            used.put(event.p, null);
+            used.put(event.getPoint(), new ReducedSpawnedEvent((BaseSpawnedEvent)event));
+//            used.put(event.getPoint(), null);
         }
         if (Controls.blockCurrentlyUsed) {
             currentlyUsed = new ConcurrentHashMap<>();
-            for (Map<SpawnedEvent, SpawnedEvent> eventSet : currentPerTime.values()) {
-                eventSet.values().parallelStream().forEach(spawnedEvent -> currentlyUsed.put(spawnedEvent.p, spawnedEvent.p));
+            for (Map<BaseSpawnedEvent, BaseSpawnedEvent> eventSet : currentPerTime.values()) {
+                eventSet.values().parallelStream().forEach(spawnedEvent -> currentlyUsed.put(spawnedEvent.getPoint(), spawnedEvent.getPoint()));
             }
         }
         for (int i = 1; i < 6; i++) {
@@ -104,7 +112,7 @@ public class SourceEvent {
         return currentSpawned.keySet();
     }
 
-    public void calcNext(SpawnedEvent se) {
+    public void calcNext(BaseSpawnedEvent se) {
         List<SpawnedEventState> spawnedEventStates = this.nextStateSelector.nextSpawnedEvent(se);
         if (Controls.moveMode == NextSpawnedMode.moveAndSplit) {
             SimpleState origSimpleState = se.stateHolder.getSimpleState();
@@ -114,11 +122,11 @@ public class SourceEvent {
                     first.add(state);
                 }
             }
-            spawnNewEvent(se.p.add(origSimpleState), se.length + origSimpleState.stateGroup.delta, first);
+            spawnNewEvent(se.getPoint().add(origSimpleState), se.length + origSimpleState.stateGroup.delta, first);
         } else {
             for (SpawnedEventState spawnedEventState : spawnedEventStates) {
                 SimpleState nextState = spawnedEventState.getSimpleState();
-                spawnNewEvent(se.p.add(nextState), se.length + nextState.stateGroup.delta, spawnedEventState);
+                spawnNewEvent(se.getPoint().add(nextState), se.length + nextState.stateGroup.delta, spawnedEventState);
             }
         }
     }
@@ -126,8 +134,8 @@ public class SourceEvent {
     private SpawnedEvent spawnNewEvent(Point np, int length, SpawnedEventState state) {
         // If the next point was never used continue
         if ((!Controls.blockCurrentlyUsed || !currentlyUsed.containsKey(np)) && !used.containsKey(np)) {
-            SpawnedEvent newSe = new SpawnedEvent(np, length, state);
-            SpawnedEvent existingSe = currentPerTime.get(time + length).putIfAbsent(newSe, newSe);
+            BaseSpawnedEvent newSe = new BaseSpawnedEvent(np, length, state);
+            BaseSpawnedEvent existingSe = currentPerTime.get(time + length).putIfAbsent(newSe, newSe);
             if (existingSe != null) {
                 existingSe.addStates(state);
                 return existingSe;
